@@ -123,53 +123,55 @@
 <svelte:window on:click={handleClickOutside} />
 
 <div class="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
-	<div class="container mx-auto px-4 py-4">
+	<div class="container mx-auto px-3 py-2 sm:px-4 sm:py-4">
 		<!-- Smart Filter Status Bar -->
 		{#if filterMetadata.filtersApplied.length > 0}
-			<div class="mb-3 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
-				<div class="flex items-center justify-between text-sm">
+			<div class="mb-2 sm:mb-3 px-2 sm:px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+				<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs sm:text-sm">
 					<div class="flex items-center space-x-2">
-						<span class="text-blue-600 font-medium">🔍 Active Filters:</span>
+						<span class="text-blue-600 font-medium hidden sm:inline">🔍 Active Filters:</span>
+						<span class="text-blue-600 font-medium sm:hidden">Filters:</span>
 						<div class="flex space-x-1">
 							{#each filterMetadata.filtersApplied as filter}
-								<span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-									{filter === 'city' ? '🏙️ City' : filter === 'date' ? '📅 Date' : '📍 Station'}
+								<span class="px-1 sm:px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+									{filter === 'date' ? '📅' : '📍'}
+									<span class="hidden sm:inline">{filter === 'date' ? ' Date' : ' Station'}</span>
 								</span>
 							{/each}
 						</div>
 					</div>
-					<div class="flex items-center space-x-3">
-						<div class="text-blue-600 font-medium">
-							📊 {filterMetadata.totalRecords.toLocaleString()} records
+					<div class="flex items-center justify-between sm:justify-start space-x-2 sm:space-x-3">
+						<div class="text-blue-600 font-medium text-xs sm:text-sm">
+							<span class="hidden sm:inline">📊 </span>{filterMetadata.totalRecords.toLocaleString()} records
 						</div>
 						<button
 							class="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded transition-colors"
 							on:click={() => dispatch('clearAllFilters')}
 						>
-							Clear All
+							Clear
 						</button>
 					</div>
 				</div>
 			</div>
 		{/if}
 		
-		<div class="flex flex-col lg:flex-row lg:items-center gap-4">
+		<div class="flex flex-row items-center gap-1 sm:gap-4">
 			
 			<!-- City Selection -->
 			<div class="dropdown-container relative">
 				<button 
-					class="w-full lg:w-auto flex items-center justify-between px-4 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-lg transition-colors duration-200 min-w-[200px]"
+					class="flex-1 sm:w-auto flex items-center justify-between px-2 sm:px-4 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-lg transition-colors duration-200 sm:min-w-[200px] text-xs sm:text-sm"
 					on:click={() => showCityDropdown = !showCityDropdown}
 				>
 					<div class="flex items-center space-x-2">
-						<span class="text-lg">
+						<span class="text-sm sm:text-lg">
 							{selectedCity ? cities.find(c => c.id === selectedCity)?.emoji || '🌍' : '🌍'}
 						</span>
-						<div class="text-left">
-							<div class="font-medium text-gray-900">
+						<div class="text-left min-w-0 flex-1">
+							<div class="font-medium text-gray-900 truncate">
 								{selectedCity ? cities.find(c => c.id === selectedCity)?.name || 'All Cities' : 'All Cities'}
 							</div>
-							<div class="text-xs text-gray-500">
+							<div class="text-xs text-gray-500 hidden sm:block">
 								{cities.length} cities, {stations.length} stations
 							</div>
 						</div>
@@ -213,28 +215,28 @@
 			<!-- Station Selection -->
 			<div class="dropdown-container relative">
 				<button 
-					class="w-full lg:w-auto flex items-center justify-between px-4 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-lg transition-colors duration-200 min-w-[250px]"
+					class="flex-1 sm:w-auto flex items-center justify-between px-2 sm:px-4 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-lg transition-colors duration-200 sm:min-w-[250px] text-xs sm:text-sm"
 					on:click={() => showStationDropdown = !showStationDropdown}
 				>
 					<div class="flex items-center space-x-2">
 						{#if selectedStation}
 							{@const reading = getStationReading(selectedStation)}
-							<span class="text-lg">
+							<span class="text-sm sm:text-lg">
 								{reading ? getAQIEmoji(reading.overall_rating) : '📍'}
 							</span>
-							<div class="text-left">
-								<div class="font-medium text-gray-900">
+							<div class="text-left min-w-0 flex-1">
+								<div class="font-medium text-gray-900 truncate">
 									{selectedStation.name.replace('Station', '').trim()}
 								</div>
-								<div class="text-xs text-gray-500">
+								<div class="text-xs text-gray-500 hidden sm:block">
 									{selectedStation.id} • {CITY_INFO[selectedStation.city]?.displayName}
 								</div>
 							</div>
 						{:else}
-							<span class="text-lg">📍</span>
-							<div class="text-left">
+							<span class="text-sm sm:text-lg">📍</span>
+							<div class="text-left min-w-0 flex-1">
 								<div class="font-medium text-gray-900">Select Station</div>
-								<div class="text-xs text-gray-500">Choose monitoring station</div>
+								<div class="text-xs text-gray-500 hidden sm:block">Choose monitoring station</div>
 							</div>
 						{/if}
 					</div>
@@ -291,18 +293,28 @@
 			<!-- Date Range Selection -->
 			<div class="dropdown-container relative">
 				<button 
-					class="w-full lg:w-auto flex items-center justify-between px-4 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-lg transition-colors duration-200 min-w-[200px]"
+					class="flex-1 sm:w-auto flex items-center justify-between px-2 sm:px-4 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-lg transition-colors duration-200 sm:min-w-[200px] text-xs sm:text-sm"
 					on:click={() => showDateDropdown = !showDateDropdown}
 				>
 					<div class="flex items-center space-x-2">
-						<span class="text-lg">
+						<span class="text-sm sm:text-lg">
 							{dateRangeOptions.find(d => d.id === selectedDateRange)?.label.split(' ')[0] || '📊'}
 						</span>
-						<div class="text-left">
-							<div class="font-medium text-gray-900">
-								{dateRangeOptions.find(d => d.id === selectedDateRange)?.label.split(' ').slice(1).join(' ') || 'Select Range'}
+						<div class="text-left min-w-0 flex-1">
+							<div class="font-medium text-gray-900 truncate">
+								{#if selectedDateRange === 'now'}
+									Real-time
+								{:else if selectedDateRange === 'today'}
+									Today
+								{:else if selectedDateRange === 'week'}
+									Past Week
+								{:else if selectedDateRange === 'month'}
+									Past Month
+								{:else}
+									Custom
+								{/if}
 							</div>
-							<div class="text-xs text-gray-500">
+							<div class="text-xs text-gray-500 hidden sm:block">
 								{dateRangeOptions.find(d => d.id === selectedDateRange)?.description || 'Choose time period'}
 							</div>
 						</div>

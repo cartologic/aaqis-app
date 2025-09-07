@@ -563,30 +563,30 @@
 
 <!-- Header -->
 <header class="text-white shadow-xl" style="{headerBackgroundStyle}">
-	<div class="container mx-auto px-4 py-4">
+	<div class="container mx-auto px-3 py-2 md:px-4 md:py-4">
 		<div class="flex flex-col md:flex-row md:items-center md:justify-between">
-			<div class="flex items-center space-x-3 mb-4 md:mb-0">
-				<div class="text-2xl">🌍</div>
+			<div class="flex items-center space-x-2 md:space-x-3 mb-2 md:mb-0">
+				<div class="text-lg md:text-2xl">🌍</div>
 				<div>
-					<h1 class="text-2xl md:text-2xl font-bold font-african text-white">
+					<h1 class="text-lg md:text-2xl font-bold font-african text-white">
 						AAQIS
 					</h1>
-					<p class="text-xs md:text-sm text-blue-100">
+					<p class="text-xs text-blue-100 hidden md:block">
 						Africa Air Quality Information System
 					</p>
 				</div>
 			</div>
 			
-			<div class="flex flex-col md:flex-row md:items-center space-y-2 md:space-y-0 md:space-x-6">
-				<div class="flex items-center space-x-2">
-					<div class="w-3 h-3 bg-green-300 rounded-full animate-pulse shadow-lg"></div>
-					<span class="text-sm text-white font-medium">Live Data</span>
+			<div class="flex flex-row items-center justify-between md:justify-start space-x-3 md:space-x-6 text-xs md:text-sm">
+				<div class="flex items-center space-x-1 md:space-x-2">
+					<div class="w-2 h-2 md:w-3 md:h-3 bg-green-300 rounded-full animate-pulse shadow-lg"></div>
+					<span class="text-white font-medium">Live</span>
 				</div>
-				<div class="text-sm text-blue-100">
-					<span>📍 {locationName}</span>
+				<div class="text-blue-100 truncate max-w-[120px] md:max-w-none">
+					<span class="hidden md:inline">📍 </span>{locationName}
 				</div>
-				<div class="text-sm text-blue-100">
-					<span>🕒 {formatTime(currentTime)}</span>
+				<div class="text-blue-100 hidden sm:block">
+					<span class="hidden md:inline">🕒 </span>{formatTime(currentTime)}
 				</div>
 			</div>
 		</div>
