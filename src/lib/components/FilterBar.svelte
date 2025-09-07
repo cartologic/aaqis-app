@@ -126,8 +126,8 @@
 	<div class="container mx-auto px-3 py-2 sm:px-4 sm:py-4">
 		<!-- Smart Filter Status Bar -->
 		{#if filterMetadata.filtersApplied.length > 0}
-			<div class="mb-2 sm:mb-3 px-2 sm:px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
-				<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs sm:text-sm">
+			<div class="mb-2 sm:mb-3 px-2 sm:px-3 py-1.5 sm:py-2 bg-blue-50 border border-blue-200 rounded-lg">
+				<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 text-xs sm:text-sm">
 					<div class="flex items-center space-x-2">
 						<span class="text-blue-600 font-medium hidden sm:inline">🔍 Active Filters:</span>
 						<span class="text-blue-600 font-medium sm:hidden">Filters:</span>
@@ -140,15 +140,15 @@
 							{/each}
 						</div>
 					</div>
-					<div class="flex items-center justify-between sm:justify-start space-x-2 sm:space-x-3">
+					<div class="flex items-center justify-between sm:justify-start space-x-1 sm:space-x-3">
 						<div class="text-blue-600 font-medium text-xs sm:text-sm">
-							<span class="hidden sm:inline">📊 </span>{filterMetadata.totalRecords.toLocaleString()} records
+							<span class="hidden sm:inline">📊 </span><span class="hidden sm:inline">{filterMetadata.totalRecords.toLocaleString()} records</span><span class="sm:hidden">{filterMetadata.totalRecords.toLocaleString()}</span>
 						</div>
 						<button
-							class="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded transition-colors"
+							class="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded transition-colors flex-shrink-0"
 							on:click={() => dispatch('clearAllFilters')}
 						>
-							Clear
+							<span class="sm:hidden">✕</span><span class="hidden sm:inline">Clear</span>
 						</button>
 					</div>
 				</div>

@@ -259,13 +259,16 @@
 			// Initialize chart
 			chart = init(chartContainer);
 
+			// Fixed cell size for square cells like GitHub
+			const cellSize = window.innerWidth < 640 ? 11 : 13;
+
 			const option = {
 				title: {
 					top: 10,
 					left: 'center',
 					text: selectedStation ? `${selectedStation.name} - ${dataYear}` : `All Stations - ${dataYear}`,
 					textStyle: {
-						fontSize: 16,
+						fontSize: window.innerWidth < 640 ? 12 : 16,
 						fontWeight: 600,
 						color: '#1f2937'
 					}
@@ -302,7 +305,7 @@
 					borderRadius: 8,
 					textStyle: {
 						color: '#1f2937',
-						fontSize: 13
+						fontSize: window.innerWidth < 640 ? 11 : 13
 					}
 				},
 				visualMap: (() => {
@@ -314,17 +317,22 @@
 							type: 'piecewise',
 							orient: 'horizontal',
 							left: 'center',
-							top: 55,
+							right: undefined,
+							top: 'auto',
+							bottom: 15,
+							itemWidth: window.innerWidth < 640 ? 14 : 20,
+							itemHeight: window.innerWidth < 640 ? 12 : 14,
+							itemGap: window.innerWidth < 640 ? 3 : 5,
 							pieces: [
-								{ min: 0, max: 50, color: '#00e400', label: 'Good (0-50)' },
-								{ min: 51, max: 100, color: '#ffff00', label: 'Moderate (51-100)' },
-								{ min: 101, max: 150, color: '#ff7e00', label: 'Unhealthy for Sensitive (101-150)' },
-								{ min: 151, max: 200, color: '#ff0000', label: 'Unhealthy (151-200)' },
-								{ min: 201, max: 300, color: '#8f3f97', label: 'Very Unhealthy (201-300)' },
-								{ min: 301, color: '#7e0023', label: 'Hazardous (300+)' }
+								{ min: 0, max: 50, color: '#00e400', label: window.innerWidth < 640 ? 'Good' : 'Good (0-50)' },
+								{ min: 51, max: 100, color: '#ffff00', label: window.innerWidth < 640 ? 'Moderate' : 'Moderate (51-100)' },
+								{ min: 101, max: 150, color: '#ff7e00', label: window.innerWidth < 640 ? 'Unhealthy Sensitive' : 'Unhealthy for Sensitive (101-150)' },
+								{ min: 151, max: 200, color: '#ff0000', label: window.innerWidth < 640 ? 'Unhealthy' : 'Unhealthy (151-200)' },
+								{ min: 201, max: 300, color: '#8f3f97', label: window.innerWidth < 640 ? 'Very Unhealthy' : 'Very Unhealthy (201-300)' },
+								{ min: 301, color: '#7e0023', label: window.innerWidth < 640 ? 'Hazardous' : 'Hazardous (300+)' }
 							],
 							textStyle: {
-								fontSize: 11,
+								fontSize: window.innerWidth < 640 ? 8 : 11,
 								color: '#374151'
 							}
 						};
@@ -335,115 +343,165 @@
 						switch (selectedPollutant) {
 							case 'pm2_5':
 								return {
-									min: 0, max: 100, type: 'piecewise', orient: 'horizontal', left: 'center', top: 55,
+									min: 0, max: 100, type: 'piecewise', 
+									orient: 'horizontal', 
+									left: 'center', 
+									top: window.innerWidth < 640 ? 'bottom' : 55,
+									bottom: window.innerWidth < 640 ? 10 : undefined,
+									itemWidth: window.innerWidth < 640 ? 14 : 20,
+									itemHeight: window.innerWidth < 640 ? 12 : 14,
+									itemGap: window.innerWidth < 640 ? 3 : 5,
 									pieces: [
-										{ min: 0, max: 5, color: '#00e400', label: 'Excellent (≤5)' },
-										{ min: 6, max: 15, color: '#80e400', label: 'Good (6-15)' },
-										{ min: 16, max: 25, color: '#ffff00', label: 'Fair (16-25)' },
-										{ min: 26, max: 50, color: '#ff7e00', label: 'Poor (26-50)' },
-										{ min: 51, max: 75, color: '#ff0000', label: 'Very Poor (51-75)' },
-										{ min: 76, color: '#8f3f97', label: 'Extremely Poor (75+)' }
+										{ min: 0, max: 5, color: '#00e400', label: window.innerWidth < 640 ? 'Excellent' : 'Excellent (≤5)' },
+										{ min: 6, max: 15, color: '#80e400', label: window.innerWidth < 640 ? 'Good' : 'Good (6-15)' },
+										{ min: 16, max: 25, color: '#ffff00', label: window.innerWidth < 640 ? 'Fair' : 'Fair (16-25)' },
+										{ min: 26, max: 50, color: '#ff7e00', label: window.innerWidth < 640 ? 'Poor' : 'Poor (26-50)' },
+										{ min: 51, max: 75, color: '#ff0000', label: window.innerWidth < 640 ? 'Very Poor' : 'Very Poor (51-75)' },
+										{ min: 76, color: '#8f3f97', label: window.innerWidth < 640 ? 'Extreme' : 'Extremely Poor (75+)' }
 									],
-									textStyle: { fontSize: 11, color: '#374151' }
+									textStyle: { fontSize: window.innerWidth < 640 ? 8 : 11, color: '#374151' }
 								};
 							case 'pm10':
 								return {
-									min: 0, max: 200, type: 'piecewise', orient: 'horizontal', left: 'center', top: 55,
+									min: 0, max: 200, type: 'piecewise',
+									orient: 'horizontal',
+									left: 'center',
+									top: window.innerWidth < 640 ? 'bottom' : 55,
+									bottom: window.innerWidth < 640 ? 10 : undefined,
+									itemWidth: window.innerWidth < 640 ? 14 : 20,
+									itemHeight: window.innerWidth < 640 ? 12 : 14,
+									itemGap: window.innerWidth < 640 ? 3 : 5,
 									pieces: [
-										{ min: 0, max: 15, color: '#00e400', label: 'Excellent (≤15)' },
-										{ min: 16, max: 45, color: '#80e400', label: 'Good (16-45)' },
-										{ min: 46, max: 75, color: '#ffff00', label: 'Fair (46-75)' },
-										{ min: 76, max: 100, color: '#ff7e00', label: 'Poor (76-100)' },
-										{ min: 101, max: 150, color: '#ff0000', label: 'Very Poor (101-150)' },
-										{ min: 151, color: '#8f3f97', label: 'Extremely Poor (150+)' }
+										{ min: 0, max: 15, color: '#00e400', label: window.innerWidth < 640 ? 'Excellent' : 'Excellent (≤15)' },
+										{ min: 16, max: 45, color: '#80e400', label: window.innerWidth < 640 ? 'Good' : 'Good (16-45)' },
+										{ min: 46, max: 75, color: '#ffff00', label: window.innerWidth < 640 ? 'Fair' : 'Fair (46-75)' },
+										{ min: 76, max: 100, color: '#ff7e00', label: window.innerWidth < 640 ? 'Poor' : 'Poor (76-100)' },
+										{ min: 101, max: 150, color: '#ff0000', label: window.innerWidth < 640 ? 'Very Poor' : 'Very Poor (101-150)' },
+										{ min: 151, color: '#8f3f97', label: window.innerWidth < 640 ? 'Extreme' : 'Extremely Poor (150+)' }
 									],
-									textStyle: { fontSize: 11, color: '#374151' }
+									textStyle: { fontSize: window.innerWidth < 640 ? 8 : 11, color: '#374151' }
 								};
 							case 'o3':
 								return {
-									min: 0, max: 300, type: 'piecewise', orient: 'horizontal', left: 'center', top: 55,
+									min: 0, max: 300, type: 'piecewise',
+									orient: 'horizontal',
+									left: 'center',
+									top: window.innerWidth < 640 ? 'bottom' : 55,
+									bottom: window.innerWidth < 640 ? 10 : undefined,
+									itemWidth: window.innerWidth < 640 ? 14 : 20,
+									itemHeight: window.innerWidth < 640 ? 12 : 14,
+									itemGap: window.innerWidth < 640 ? 3 : 5,
 									pieces: [
-										{ min: 0, max: 60, color: '#00e400', label: 'Excellent (≤60)' },
-										{ min: 61, max: 100, color: '#80e400', label: 'Good (61-100)' },
-										{ min: 101, max: 140, color: '#ffff00', label: 'Fair (101-140)' },
-										{ min: 141, max: 180, color: '#ff7e00', label: 'Poor (141-180)' },
-										{ min: 181, max: 240, color: '#ff0000', label: 'Very Poor (181-240)' },
-										{ min: 241, color: '#8f3f97', label: 'Extremely Poor (240+)' }
+										{ min: 0, max: 60, color: '#00e400', label: window.innerWidth < 640 ? 'Excellent' : 'Excellent (≤60)' },
+										{ min: 61, max: 100, color: '#80e400', label: window.innerWidth < 640 ? 'Good' : 'Good (61-100)' },
+										{ min: 101, max: 140, color: '#ffff00', label: window.innerWidth < 640 ? 'Fair' : 'Fair (101-140)' },
+										{ min: 141, max: 180, color: '#ff7e00', label: window.innerWidth < 640 ? 'Poor' : 'Poor (141-180)' },
+										{ min: 181, max: 240, color: '#ff0000', label: window.innerWidth < 640 ? 'Very Poor' : 'Very Poor (181-240)' },
+										{ min: 241, color: '#8f3f97', label: window.innerWidth < 640 ? 'Extreme' : 'Extremely Poor (240+)' }
 									],
-									textStyle: { fontSize: 11, color: '#374151' }
+									textStyle: { fontSize: window.innerWidth < 640 ? 8 : 11, color: '#374151' }
 								};
 							case 'no2':
 								return {
-									min: 0, max: 150, type: 'piecewise', orient: 'horizontal', left: 'center', top: 55,
+									min: 0, max: 150, type: 'piecewise',
+									orient: 'horizontal',
+									left: 'center',
+									top: window.innerWidth < 640 ? 'bottom' : 55,
+									bottom: window.innerWidth < 640 ? 10 : undefined,
+									itemWidth: window.innerWidth < 640 ? 14 : 20,
+									itemHeight: window.innerWidth < 640 ? 12 : 14,
+									itemGap: window.innerWidth < 640 ? 3 : 5,
 									pieces: [
-										{ min: 0, max: 10, color: '#00e400', label: 'Excellent (≤10)' },
-										{ min: 11, max: 25, color: '#80e400', label: 'Good (11-25)' },
-										{ min: 26, max: 40, color: '#ffff00', label: 'Fair (26-40)' },
-										{ min: 41, max: 70, color: '#ff7e00', label: 'Poor (41-70)' },
-										{ min: 71, max: 100, color: '#ff0000', label: 'Very Poor (71-100)' },
-										{ min: 101, color: '#8f3f97', label: 'Extremely Poor (100+)' }
+										{ min: 0, max: 10, color: '#00e400', label: window.innerWidth < 640 ? 'Excellent' : 'Excellent (≤10)' },
+										{ min: 11, max: 25, color: '#80e400', label: window.innerWidth < 640 ? 'Good' : 'Good (11-25)' },
+										{ min: 26, max: 40, color: '#ffff00', label: window.innerWidth < 640 ? 'Fair' : 'Fair (26-40)' },
+										{ min: 41, max: 70, color: '#ff7e00', label: window.innerWidth < 640 ? 'Poor' : 'Poor (41-70)' },
+										{ min: 71, max: 100, color: '#ff0000', label: window.innerWidth < 640 ? 'Very Poor' : 'Very Poor (71-100)' },
+										{ min: 101, color: '#8f3f97', label: window.innerWidth < 640 ? 'Extreme' : 'Extremely Poor (100+)' }
 									],
-									textStyle: { fontSize: 11, color: '#374151' }
+									textStyle: { fontSize: window.innerWidth < 640 ? 8 : 11, color: '#374151' }
 								};
 							case 'so2':
 								return {
-									min: 0, max: 250, type: 'piecewise', orient: 'horizontal', left: 'center', top: 55,
+									min: 0, max: 250, type: 'piecewise',
+									orient: 'horizontal',
+									left: 'center',
+									top: window.innerWidth < 640 ? 'bottom' : 55,
+									bottom: window.innerWidth < 640 ? 10 : undefined,
+									itemWidth: window.innerWidth < 640 ? 14 : 20,
+									itemHeight: window.innerWidth < 640 ? 12 : 14,
+									itemGap: window.innerWidth < 640 ? 3 : 5,
 									pieces: [
-										{ min: 0, max: 20, color: '#00e400', label: 'Excellent (≤20)' },
-										{ min: 21, max: 40, color: '#80e400', label: 'Good (21-40)' },
-										{ min: 41, max: 80, color: '#ffff00', label: 'Fair (41-80)' },
-										{ min: 81, max: 120, color: '#ff7e00', label: 'Poor (81-120)' },
-										{ min: 121, max: 200, color: '#ff0000', label: 'Very Poor (121-200)' },
-										{ min: 201, color: '#8f3f97', label: 'Extremely Poor (200+)' }
+										{ min: 0, max: 20, color: '#00e400', label: window.innerWidth < 640 ? 'Excellent' : 'Excellent (≤20)' },
+										{ min: 21, max: 40, color: '#80e400', label: window.innerWidth < 640 ? 'Good' : 'Good (21-40)' },
+										{ min: 41, max: 80, color: '#ffff00', label: window.innerWidth < 640 ? 'Fair' : 'Fair (41-80)' },
+										{ min: 81, max: 120, color: '#ff7e00', label: window.innerWidth < 640 ? 'Poor' : 'Poor (81-120)' },
+										{ min: 121, max: 200, color: '#ff0000', label: window.innerWidth < 640 ? 'Very Poor' : 'Very Poor (121-200)' },
+										{ min: 201, color: '#8f3f97', label: window.innerWidth < 640 ? 'Extreme' : 'Extremely Poor (200+)' }
 									],
-									textStyle: { fontSize: 11, color: '#374151' }
+									textStyle: { fontSize: window.innerWidth < 640 ? 8 : 11, color: '#374151' }
 								};
 							case 'co':
 								return {
-									min: 0, max: 30, type: 'piecewise', orient: 'horizontal', left: 'center', top: 55,
+									min: 0, max: 30, type: 'piecewise',
+									orient: 'horizontal',
+									left: 'center',
+									top: window.innerWidth < 640 ? 'bottom' : 55,
+									bottom: window.innerWidth < 640 ? 10 : undefined,
+									itemWidth: window.innerWidth < 640 ? 14 : 20,
+									itemHeight: window.innerWidth < 640 ? 12 : 14,
+									itemGap: window.innerWidth < 640 ? 3 : 5,
 									pieces: [
-										{ min: 0, max: 2, color: '#00e400', label: 'Excellent (≤2)' },
-										{ min: 3, max: 4, color: '#80e400', label: 'Good (3-4)' },
-										{ min: 5, max: 8, color: '#ffff00', label: 'Fair (5-8)' },
-										{ min: 9, max: 15, color: '#ff7e00', label: 'Poor (9-15)' },
-										{ min: 16, max: 25, color: '#ff0000', label: 'Very Poor (16-25)' },
-										{ min: 26, color: '#8f3f97', label: 'Extremely Poor (25+)' }
+										{ min: 0, max: 2, color: '#00e400', label: window.innerWidth < 640 ? 'Excellent' : 'Excellent (≤2)' },
+										{ min: 3, max: 4, color: '#80e400', label: window.innerWidth < 640 ? 'Good' : 'Good (3-4)' },
+										{ min: 5, max: 8, color: '#ffff00', label: window.innerWidth < 640 ? 'Fair' : 'Fair (5-8)' },
+										{ min: 9, max: 15, color: '#ff7e00', label: window.innerWidth < 640 ? 'Poor' : 'Poor (9-15)' },
+										{ min: 16, max: 25, color: '#ff0000', label: window.innerWidth < 640 ? 'Very Poor' : 'Very Poor (16-25)' },
+										{ min: 26, color: '#8f3f97', label: window.innerWidth < 640 ? 'Extreme' : 'Extremely Poor (25+)' }
 									],
-									textStyle: { fontSize: 11, color: '#374151' }
+									textStyle: { fontSize: window.innerWidth < 640 ? 8 : 11, color: '#374151' }
 								};
 							default:
 								// Fallback
 								return {
-									min: 0, max: 100, type: 'continuous', orient: 'horizontal', left: 'center', top: 55,
+									min: 0, max: 100, type: 'continuous',
+									orient: 'horizontal',
+									left: 'center',
+									top: 'auto',
+									bottom: 15,
 									inRange: { color: ['#00e400', '#80e400', '#ffff00', '#ff7e00', '#ff0000'] },
 									text: [`High (${unit})`, `Low (${unit})`],
-									textStyle: { fontSize: 11, color: '#374151' }
+									textStyle: { fontSize: window.innerWidth < 640 ? 8 : 11, color: '#374151' }
 								};
 						}
 					}
 				})(),
 				calendar: {
-					top: 120,
-					left: 30,
-					right: 30,
-					cellSize: ['auto', 15],
+					top: 100,
+					left: window.innerWidth < 640 ? 25 : 30,
+					right: window.innerWidth < 640 ? 10 : 30,
+					bottom: 90, // Space for legend at bottom
+					cellSize: [cellSize, cellSize], // Square cells like GitHub
 					range: dataYear.toString(),
 					itemStyle: {
 						borderWidth: 1,
-						borderColor: '#e5e7eb',
+						borderColor: '#ffffff',
 						borderRadius: 2
 					},
 					yearLabel: { 
 						show: false 
 					},
 					monthLabel: {
-						fontSize: 12,
+						fontSize: window.innerWidth < 640 ? 10 : 12,
 						color: '#374151',
-						fontWeight: 600
+						fontWeight: 500,
+						nameMap: window.innerWidth < 640 ? 'en-short' : 'en' // Use short month names on mobile
 					},
 					dayLabel: {
-						fontSize: 11,
-						color: '#6b7280'
+						firstDay: 0, // Start week on Sunday
+						fontSize: window.innerWidth < 640 ? 8 : 10,
+						color: '#6b7280',
+						nameMap: window.innerWidth < 640 ? ['S', 'M', 'T', 'W', 'T', 'F', 'S'] : 'en' // Single letter days on mobile
 					},
 					splitLine: {
 						show: true,
@@ -616,13 +674,13 @@
 	<!-- Chart Content -->
 	
 	{#if data && data.length > 0}
-		<div class="p-8 relative">
+		<div class="p-4 sm:p-6 md:p-8 relative">
 			<!-- Decorative background elements -->
 			<div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-100/20 to-green-100/20 rounded-full blur-3xl"></div>
 			<div class="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-yellow-100/20 to-orange-100/20 rounded-full blur-3xl"></div>
 			
 			<div class="w-full relative z-10">
-				<div bind:this={chartContainer} class="w-full h-96"></div>
+				<div bind:this={chartContainer} class="w-full h-[450px] sm:h-[400px] md:h-[450px]"></div>
 			</div>
 		</div>
 	{:else}
