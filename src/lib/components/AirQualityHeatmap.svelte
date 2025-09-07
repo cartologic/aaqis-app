@@ -15,6 +15,7 @@
 
 	let chartContainer: HTMLDivElement;
 	let chart: any;
+	let showTooltip = false;
 
 	// Calculate available years from data only if not provided by parent
 	$: {
@@ -521,11 +522,47 @@
 	<!-- Header with Controls -->
 	<div class="p-6 border-b border-gray-200">
 		<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-			<div>
-				<h3 class="text-xl font-bold text-gray-800 mb-2">{title}</h3>
+			<div class="relative">
+				<div class="flex items-center gap-2 mb-2">
+					<h3 class="text-xl font-bold text-gray-800">{title}</h3>
+					<button 
+						class="text-blue-500 hover:text-blue-600 text-xs font-bold border border-blue-500 rounded-full w-5 h-5 flex items-center justify-center"
+						on:mouseenter={() => showTooltip = true}
+						on:mouseleave={() => showTooltip = false}
+						on:focus={() => showTooltip = true}
+						on:blur={() => showTooltip = false}
+					>
+						!
+					</button>
+				</div>
 				<p class="text-sm text-gray-600">
 					{stationName} - Daily air quality patterns. Hover over squares for details.
 				</p>
+				
+				<!-- Tooltip -->
+				{#if showTooltip}
+					<div class="absolute top-full left-0 mt-2 w-80 z-50">
+						<div class="bg-gray-800 text-white text-xs rounded-lg p-3 shadow-lg">
+							<div class="font-semibold mb-2 text-blue-300">EPA AQI Calculation Method</div>
+							<div class="space-y-2">
+								<div>
+									<strong>Overall AQI Formula:</strong><br>
+									<code class="bg-gray-700 px-1 rounded">AQI = max(PM2.5_AQI, PM10_AQI, O₃_AQI, NO₂_AQI, SO₂_AQI, CO_AQI)</code>
+								</div>
+								<div>
+									<strong>Method:</strong> The pollutant with the highest AQI value determines the overall AQI for that day.
+								</div>
+								<div>
+									<strong>Colors:</strong> Based on EPA health categories - Good (Green), Moderate (Yellow), Unhealthy (Red), etc.
+								</div>
+								<div class="text-blue-300">
+									<strong>Source:</strong> U.S. EPA Air Quality Index Standards
+								</div>
+							</div>
+							<div class="absolute -top-1 left-6 border-4 border-transparent border-b-gray-800"></div>
+						</div>
+					</div>
+				{/if}
 			</div>
 			<div class="flex flex-col sm:flex-row gap-3">
 				<!-- Year Selection -->

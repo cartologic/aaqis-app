@@ -4,6 +4,8 @@
 	export let aqi: number = 0;
 	export let rating: string = 'Good';
 	export let size: number = 200;
+	
+	let showTooltip = false;
 
 	let canvasElement: HTMLCanvasElement;
 
@@ -109,13 +111,47 @@
 		</div>
 	</div>
 	
-	<!-- Rating label -->
-	<div class="mt-4 text-center">
+	<!-- Rating label with info tooltip -->
+	<div class="mt-4 text-center relative">
 		<div class="text-xl font-bold" style="color: {strokeColor}">
 			{rating}
 		</div>
-		<div class="text-sm text-gray-600 mt-1">
-			Air Quality Index
+		<div class="text-sm text-gray-600 mt-1 flex items-center justify-center gap-2">
+			<span>Air Quality Index</span>
+			<button 
+				class="text-blue-500 hover:text-blue-600 text-xs font-bold border border-blue-500 rounded-full w-4 h-4 flex items-center justify-center"
+				on:mouseenter={() => showTooltip = true}
+				on:mouseleave={() => showTooltip = false}
+				on:focus={() => showTooltip = true}
+				on:blur={() => showTooltip = false}
+			>
+				!
+			</button>
 		</div>
+		
+		<!-- Tooltip -->
+		{#if showTooltip}
+			<div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-80 z-50">
+				<div class="bg-gray-800 text-white text-xs rounded-lg p-3 shadow-lg">
+					<div class="font-semibold mb-2 text-blue-300">EPA AQI Calculation Method</div>
+					<div class="space-y-2">
+						<div>
+							<strong>Overall AQI Formula:</strong><br>
+							<code class="bg-gray-700 px-1 rounded">AQI = max(PM2.5_AQI, PM10_AQI, O₃_AQI, NO₂_AQI, SO₂_AQI, CO_AQI)</code>
+						</div>
+						<div>
+							<strong>Method:</strong> The pollutant with the highest AQI value determines the overall AQI for that location and time.
+						</div>
+						<div>
+							<strong>Pollutants:</strong> PM2.5, PM10, Ozone (O₃), Nitrogen Dioxide (NO₂), Sulfur Dioxide (SO₂), Carbon Monoxide (CO)
+						</div>
+						<div class="text-blue-300">
+							<strong>Source:</strong> U.S. EPA Air Quality Index Standards
+						</div>
+					</div>
+					<div class="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+				</div>
+			</div>
+		{/if}
 	</div>
 </div>

@@ -18,7 +18,7 @@
 	let nearestStation: Station | null = null;
 	let selectedStation: Station | null = null;
 	let currentReading: AirQualityReading | null = null;
-	let selectedCity = 'all';
+	let selectedCity = '';
 	let selectedPollutant = 'pm2_5';
 	let startDate = '2024-01-01';
 	let endDate = simulateCurrentTime().toISOString().split('T')[0];
@@ -96,21 +96,10 @@
 			);
 		}
 		
-		// Auto-select city and station based on detected location
-		if (nearestStation && selectedCity === 'all') {
+		// Auto-select station based on detected location
+		if (nearestStation) {
 			selectedCity = nearestStation.city;
 			selectedStation = nearestStation;
-		} else if (selectedCity === 'all' && stations.length > 0) {
-			// Fallback: auto-select first city if no location detected
-			const availableCities = [...new Set(stations.map(s => s.city))];
-			if (availableCities.length > 0) {
-				selectedCity = availableCities[0];
-				// Auto-select first station in that city
-				const firstStation = stations.filter(s => s.city === availableCities[0])[0];
-				if (firstStation) {
-					selectedStation = firstStation;
-				}
-			}
 		}
 
 		isLoading = false;
@@ -125,9 +114,8 @@
 	$: {
 		// Get available years for current filters
 		let baseData = getDataUpToCurrentTime(allData);
-		if (selectedCity !== 'all') {
-			baseData = baseData.filter(reading => reading.city === selectedCity);
-		}
+		
+		// Only filter by station if selected (not by city anymore)
 		if (selectedStation) {
 			baseData = baseData.filter(reading => reading.station_id === selectedStation.id);
 		}
@@ -212,10 +200,7 @@
 				});
 			}
 			
-			// Apply city filter
-			if (selectedCity !== 'all') {
-				tempFiltered = tempFiltered.filter(reading => reading.city === selectedCity);
-			}
+			// Don't filter by city anymore - show all cities
 			
 			// Apply data aggregation for time-based filtering
 			if (selectedDateRange !== 'now' && tempFiltered.length > 0) {
@@ -296,7 +281,6 @@
 				dateRange,
 				totalRecords: tempFiltered.length,
 				filtersApplied: [
-					...(selectedCity !== 'all' ? ['city'] : []),
 					...(selectedDateRange !== 'now' ? ['date'] : []),
 					...(selectedStation ? ['station'] : [])
 				]
@@ -316,12 +300,12 @@
 			locationName = `${CITY_INFO[activeStation.city]?.displayName || activeStation.city} - ${activeStation.name}`;
 			const country = CITY_INFO[activeStation.city]?.country;
 			headerBackgroundStyle = country ? `background: ${COUNTRY_COLOR_PALETTE[country]}` : 'background: linear-gradient(135deg, #2563eb 0%, #16a34a 50%, #2563eb 100%)';
-		} else if (selectedCity && selectedCity !== 'all') {
+		} else if (selectedCity) {
 			locationName = CITY_INFO[selectedCity]?.displayName || selectedCity;
 			const country = CITY_INFO[selectedCity]?.country;
 			headerBackgroundStyle = country ? `background: ${COUNTRY_COLOR_PALETTE[country]}` : 'background: linear-gradient(135deg, #2563eb 0%, #16a34a 50%, #2563eb 100%)';
 		} else {
-			locationName = 'Your Area';
+			locationName = 'All Cities';
 			headerBackgroundStyle = 'background: linear-gradient(135deg, #2563eb 0%, #16a34a 50%, #2563eb 100%)';
 		}
 	}
@@ -349,11 +333,7 @@
 	// Filter event handlers
 	function handleCityChange(event: CustomEvent<string>) {
 		selectedCity = event.detail;
-		// Reset station selection when city changes
-		if (selectedCity !== 'all') {
-			selectedStation = null;
-			isManualSelection = false;
-		}
+		// City selection is now just for reference, don't reset station
 	}
 	
 	function handleStationSelect(event: CustomEvent<Station | null>) {
@@ -398,14 +378,14 @@
 	}
 	
 	function handleClearFilters() {
-		selectedCity = 'all';
+		selectedCity = '';
 		selectedStation = null;
 		selectedDateRange = 'now';
 		isManualSelection = false;
 	}
 	
 	function handleClearAllFilters() {
-		selectedCity = 'all';
+		selectedCity = '';
 		selectedStation = null;
 		selectedDateRange = 'now';
 		startDate = '';
@@ -757,7 +737,7 @@
 					<div class="bg-white rounded-xl shadow-lg p-6">
 						<LineChart 
 							data={filteredData} 
-							title="Air Quality Trend - {selectedCity === 'all' ? 'All Cities' : (CITY_INFO[selectedCity]?.displayName || selectedCity.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()))}"
+							title="Air Quality Trend - {selectedStation ? selectedStation.name : 'All Cities'}"
 							height={400}
 						/>
 					</div>
@@ -770,14 +750,11 @@
 			<div class="container mx-auto px-4">
 				<AirQualityHeatmap 
 					data={(() => {
-						// Use properly filtered data that includes city/station filters
+						// Use properly filtered data that includes station filters
 						// but ignore date range filters for calendar view (we need full year data)
 						let baseData = getDataUpToCurrentTime(allData);
 						
-						// Apply city filter if selected
-						if (selectedCity !== 'all') {
-							baseData = baseData.filter(reading => reading.city === selectedCity);
-						}
+						// Don't filter by city anymore - show all cities
 						
 						// Apply station filter if selected (this is the key fix!)
 						if (selectedStation) {
@@ -790,31 +767,24 @@
 							return readingYear === calendarSelectedYear;
 						});
 						
-						console.log(`Filtered ${heatmapData.length} records for ${selectedStation ? selectedStation.name : (selectedCity === 'all' ? 'all cities' : selectedCity)} in ${calendarSelectedYear} heatmap`);
+						console.log(`Filtered ${heatmapData.length} records for ${selectedStation ? selectedStation.name : 'all cities'} in ${calendarSelectedYear} heatmap`);
 						return heatmapData;
 					})()} 
 					selectedStation={activeStation}
 					title="Air Quality Calendar View"
-					stationName="{activeStation ? activeStation.name : (selectedCity === 'all' ? 'All Cities' : (CITY_INFO[selectedCity]?.displayName || selectedCity.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())))}"
+					stationName="{activeStation ? activeStation.name : 'All Cities'}"
 					availableYears={(() => {
 						// Use same filtering logic for available years
 						let baseData = getDataUpToCurrentTime(allData);
-						console.log('Base data after current time filter:', baseData.length, 'records');
 						
-						// Apply city filter if selected
-						if (selectedCity !== 'all') {
-							baseData = baseData.filter(reading => reading.city === selectedCity);
-							console.log('After city filter:', baseData.length, 'records for city:', selectedCity);
-						}
+						// Don't filter by city anymore - show all cities
 						
 						// Apply station filter if selected
 						if (selectedStation) {
 							baseData = baseData.filter(reading => reading.station_id === selectedStation.id);
-							console.log('After station filter:', baseData.length, 'records for station:', selectedStation.id);
 						}
 						
 						const years = [...new Set(baseData.map(r => new Date(r.datetime).getFullYear()))].sort((a, b) => b - a);
-						console.log('Available years calculated for calendar:', years);
 						return years;
 					})()}
 					selectedYear={calendarSelectedYear}

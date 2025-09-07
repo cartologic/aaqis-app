@@ -6,7 +6,7 @@
 	
 	export let stations: Station[] = [];
 	export let latestReadings: AirQualityReading[] = [];
-	export let selectedCity: string = 'all';
+	export let selectedCity: string = '';
 	export let selectedStation: Station | null = null;
 	export let selectedDateRange: string = 'now';
 	export let startDate: string = '';
@@ -43,8 +43,8 @@
 		};
 	}).sort((a, b) => a.name.localeCompare(b.name));
 	
-	// Smart station filtering with availability detection
-	$: filteredStations = (selectedCity === 'all' ? stations : stations.filter(s => s.city === selectedCity))
+	// Filter stations by selected city
+	$: filteredStations = (selectedCity ? stations.filter(s => s.city === selectedCity) : stations)
 		.map(station => {
 			const isAvailable = filterMetadata.availableStations.length === 0 || filterMetadata.availableStations.includes(station.id);
 			return {
@@ -72,23 +72,11 @@
 	
 	function selectCity(cityId: string) {
 		selectedCity = cityId;
-		if (cityId !== 'all') {
-			// Auto-select first station in the city (always available)
-			const cityStations = stations.filter(s => s.city === cityId)
-				.sort((a, b) => a.name.localeCompare(b.name));
-			
-			const firstStation = cityStations[0];
-			if (firstStation) {
-				selectedStation = firstStation;
-				dispatch('stationSelect', firstStation);
-			} else {
-				selectedStation = null;
-				dispatch('stationSelect', null);
-			}
-		} else {
-			selectedStation = null;
-			dispatch('stationSelect', null);
-		}
+		
+		// Clear station selection when city changes
+		selectedStation = null;
+		dispatch('stationSelect', null);
+		
 		showCityDropdown = false;
 		dispatch('cityChange', cityId);
 	}
@@ -175,14 +163,14 @@
 				>
 					<div class="flex items-center space-x-2">
 						<span class="text-lg">
-							{selectedCity === 'all' ? '🌍' : cities.find(c => c.id === selectedCity)?.emoji || '🌍'}
+							{selectedCity ? cities.find(c => c.id === selectedCity)?.emoji || '🌍' : '🌍'}
 						</span>
 						<div class="text-left">
 							<div class="font-medium text-gray-900">
-								{selectedCity === 'all' ? 'All Cities' : cities.find(c => c.id === selectedCity)?.name || 'Select City'}
+								{selectedCity ? cities.find(c => c.id === selectedCity)?.name || 'All Cities' : 'All Cities'}
 							</div>
 							<div class="text-xs text-gray-500">
-								{selectedCity === 'all' ? `${cities.length} cities` : `${filteredStations.length} stations`}
+								{cities.length} cities, {stations.length} stations
 							</div>
 						</div>
 					</div>
@@ -194,19 +182,6 @@
 				{#if showCityDropdown}
 					<div class="absolute top-full left-0 mt-1 w-full lg:w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
 						<div class="p-2">
-							<button 
-								class="w-full text-left px-3 py-2 hover:bg-gray-50 rounded-md transition-colors duration-150 {selectedCity === 'all' ? 'bg-blue-50 text-blue-700' : ''}"
-								on:click={() => selectCity('all')}
-							>
-								<div class="flex items-center space-x-3">
-									<span class="text-xl">🌍</span>
-									<div>
-										<div class="font-medium">All Cities</div>
-										<div class="text-xs text-gray-500">{cities.length} cities, {stations.length} stations</div>
-									</div>
-								</div>
-							</button>
-							<hr class="my-2" />
 							{#each cities as city}
 								<button 
 									class="w-full text-left px-3 py-2 rounded-md transition-colors duration-150 {selectedCity === city.id ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50'}"
@@ -396,11 +371,11 @@
 			</div>
 			
 			<!-- Clear Filters Button -->
-			{#if selectedCity !== 'all' || selectedStation || selectedDateRange !== 'now'}
+			{#if selectedCity || selectedStation || selectedDateRange !== 'now'}
 				<button 
 					class="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors duration-200 flex items-center space-x-2"
 					on:click={() => {
-						selectedCity = 'all';
+						selectedCity = '';
 						selectedStation = null;
 						selectedDateRange = 'now';
 						dispatch('clearFilters');
