@@ -452,14 +452,14 @@
 		});
 		
 		return Object.entries(cityGroups).map(([city, readings]) => {
-			const avgAQI = readings.reduce((sum, r) => sum + r.overall_aqi, 0) / readings.length;
+			const maxAQI = Math.max(...readings.map(r => r.overall_aqi));
 			const avgPM25 = readings.reduce((sum, r) => sum + r.pm2_5, 0) / readings.length;
 			const cityInfo = CITY_INFO[city];
 			
 			return {
 				name: cityInfo?.displayName || city,
 				emoji: cityInfo?.emoji || '🌆',
-				aqi: avgAQI,
+				aqi: maxAQI,
 				pm25: avgPM25,
 				rating: readings[0]?.overall_rating || 'good',
 				stationCount: readings.length
@@ -488,9 +488,9 @@
 				stations: stationData.sort((a, b) => b.reading.overall_aqi - a.reading.overall_aqi)
 			};
 		}).sort((a, b) => {
-			const avgAQIA = a.stations.reduce((sum, s) => sum + s.reading.overall_aqi, 0) / a.stations.length;
-			const avgAQIB = b.stations.reduce((sum, s) => sum + s.reading.overall_aqi, 0) / b.stations.length;
-			return avgAQIB - avgAQIA;
+			const maxAQIA = Math.max(...a.stations.map(s => s.reading.overall_aqi));
+			const maxAQIB = Math.max(...b.stations.map(s => s.reading.overall_aqi));
+			return maxAQIB - maxAQIA;
 		});
 	}
 	

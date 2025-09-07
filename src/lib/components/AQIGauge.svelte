@@ -136,17 +136,20 @@
 					<div class="font-semibold mb-2 text-blue-300">EPA AQI Calculation Method</div>
 					<div class="space-y-2">
 						<div>
-							<strong>Overall AQI Formula:</strong><br>
-							<code class="bg-gray-700 px-1 rounded">AQI = max(PM2.5_AQI, PM10_AQI, O₃_AQI, NO₂_AQI, SO₂_AQI, CO_AQI)</code>
+							<strong>EPA AQI Calculation:</strong><br>
+							<code class="bg-gray-700 px-1 rounded">AQI = highest value among all pollutants</code>
 						</div>
 						<div>
-							<strong>Method:</strong> The pollutant with the highest AQI value determines the overall AQI for that location and time.
+							<strong>Method:</strong> Each pollutant concentration is converted to an AQI value using EPA breakpoints and Equation 1. The highest individual pollutant AQI becomes the reported AQI.
 						</div>
 						<div>
-							<strong>Pollutants:</strong> PM2.5, PM10, Ozone (O₃), Nitrogen Dioxide (NO₂), Sulfur Dioxide (SO₂), Carbon Monoxide (CO)
+							<strong>Formula:</strong> <code class="bg-gray-700 px-1 rounded text-xs">I = ((IHi-ILo)/(BPHi-BPLo)) × (C-BPLo) + ILo</code>
 						</div>
-						<div class="text-blue-300">
-							<strong>Source:</strong> U.S. EPA Air Quality Index Standards
+						<div>
+							<strong>Pollutants:</strong> PM2.5, PM10, O₃, NO₂, SO₂, CO
+						</div>
+						<div class="text-blue-300 text-xs">
+							<strong>Source:</strong> EPA Technical Assistance Document for Reporting Daily Air Quality Index
 						</div>
 					</div>
 					<div class="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>

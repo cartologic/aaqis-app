@@ -547,17 +547,20 @@
 							<div class="font-semibold mb-2 text-blue-300">EPA AQI Calculation Method</div>
 							<div class="space-y-2">
 								<div>
-									<strong>Overall AQI Formula:</strong><br>
-									<code class="bg-gray-700 px-1 rounded">AQI = max(PM2.5_AQI, PM10_AQI, O₃_AQI, NO₂_AQI, SO₂_AQI, CO_AQI)</code>
+									<strong>EPA AQI Calculation:</strong><br>
+									<code class="bg-gray-700 px-1 rounded">AQI = highest individual pollutant AQI</code>
 								</div>
 								<div>
-									<strong>Method:</strong> The pollutant with the highest AQI value determines the overall AQI for that day.
+									<strong>Process:</strong> Each pollutant concentration → AQI value using EPA breakpoints → highest AQI reported.
 								</div>
 								<div>
-									<strong>Colors:</strong> Based on EPA health categories - Good (Green), Moderate (Yellow), Unhealthy (Red), etc.
+									<strong>Steps:</strong> 1) Truncate concentrations 2) Find breakpoints 3) Apply Equation 1 4) Round to integer 5) Report highest
 								</div>
-								<div class="text-blue-300">
-									<strong>Source:</strong> U.S. EPA Air Quality Index Standards
+								<div>
+									<strong>Colors:</strong> EPA health categories (Good, Moderate, Unhealthy, etc.)
+								</div>
+								<div class="text-blue-300 text-xs">
+									<strong>Source:</strong> EPA Technical Assistance Document (Page 18, Section IV)
 								</div>
 							</div>
 							<div class="absolute -top-1 left-6 border-4 border-transparent border-b-gray-800"></div>
