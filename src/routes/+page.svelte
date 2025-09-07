@@ -27,10 +27,12 @@
 	let selectedStakeholder = 'public';
 	let mapComponent: MapComponent;
 	let isLoading = true;
-	let currentTime = simulateCurrentTime();
+	let currentTime = new Date();
 	let locationMessage = '';
 	let isManualSelection = false;
 	let locationName = 'Your Area';
+	let calendarSelectedYear: number = new Date().getFullYear();
+	let calendarSelectedPollutant = 'overall_aqi';
 	let headerBackgroundStyle = 'background: linear-gradient(135deg, #2563eb 0%, #16a34a 50%, #2563eb 100%)'; // Default gradient
 	let filterMetadata = {
 		availableCities: [] as string[],
@@ -94,13 +96,48 @@
 			);
 		}
 		
+		// Auto-select city and station based on detected location
+		if (nearestStation && selectedCity === 'all') {
+			selectedCity = nearestStation.city;
+			selectedStation = nearestStation;
+		} else if (selectedCity === 'all' && stations.length > 0) {
+			// Fallback: auto-select first city if no location detected
+			const availableCities = [...new Set(stations.map(s => s.city))];
+			if (availableCities.length > 0) {
+				selectedCity = availableCities[0];
+				// Auto-select first station in that city
+				const firstStation = stations.filter(s => s.city === availableCities[0])[0];
+				if (firstStation) {
+					selectedStation = firstStation;
+				}
+			}
+		}
+
 		isLoading = false;
 
-		// Update time every minute for simulation
+		// Update time every minute with real current time
 		setInterval(() => {
-			currentTime = new Date(currentTime.getTime() + 60000);
+			currentTime = new Date();
 		}, 60000);
 	});
+
+	// Auto-adjust calendar year if not available for selected filters
+	$: {
+		// Get available years for current filters
+		let baseData = getDataUpToCurrentTime(allData);
+		if (selectedCity !== 'all') {
+			baseData = baseData.filter(reading => reading.city === selectedCity);
+		}
+		if (selectedStation) {
+			baseData = baseData.filter(reading => reading.station_id === selectedStation.id);
+		}
+		const availableYears = [...new Set(baseData.map(r => new Date(r.datetime).getFullYear()))];
+		
+		// If current selected year is not available, pick the most recent available year
+		if (availableYears.length > 0 && !availableYears.includes(calendarSelectedYear)) {
+			calendarSelectedYear = Math.max(...availableYears);
+		}
+	}
 
 	// Smart cross-filtering with auto-detection and dependency management
 	$: {
@@ -115,8 +152,8 @@
 			
 			// Apply date range filter first (most restrictive)
 			if (selectedDateRange !== 'now') {
-				// Use simulated current time instead of actual current date
-				const now = currentTime;
+				// Use actual current time for date range calculations
+				const now = new Date();
 				let startDateObj, endDateObj;
 				
 				switch (selectedDateRange) {
@@ -406,11 +443,13 @@
 	}
 
 	function formatTime(date: Date): string {
-		return date.toLocaleString('en-US', {
+		return date.toLocaleString(undefined, {
+			timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
 			month: 'short',
 			day: 'numeric',
 			hour: '2-digit',
-			minute: '2-digit'
+			minute: '2-digit',
+			timeZoneName: 'short'
 		});
 	}
 	
@@ -731,23 +770,57 @@
 			<div class="container mx-auto px-4">
 				<AirQualityHeatmap 
 					data={(() => {
-						// Get available years from data dynamically
-						const availableYears = [...new Set(allData.map(r => new Date(r.datetime).getFullYear()))];
-						console.log('Available years in data:', availableYears);
+						// Use properly filtered data that includes city/station filters
+						// but ignore date range filters for calendar view (we need full year data)
+						let baseData = getDataUpToCurrentTime(allData);
 						
-						// Use 2024 for best data coverage, fallback to earliest year
-						const targetYear = availableYears.includes(2024) ? 2024 : (availableYears.length > 0 ? Math.min(...availableYears) : new Date().getFullYear());
-						console.log('Using year for heatmap:', targetYear);
+						// Apply city filter if selected
+						if (selectedCity !== 'all') {
+							baseData = baseData.filter(reading => reading.city === selectedCity);
+						}
 						
-						const heatmapData = allData.filter(reading => {
+						// Apply station filter if selected (this is the key fix!)
+						if (selectedStation) {
+							baseData = baseData.filter(reading => reading.station_id === selectedStation.id);
+						}
+						
+						// Apply year filter for calendar
+						const heatmapData = baseData.filter(reading => {
 							const readingYear = new Date(reading.datetime).getFullYear();
-							return readingYear === targetYear;
+							return readingYear === calendarSelectedYear;
 						});
-						console.log(`Filtered ${heatmapData.length} records for year ${targetYear} heatmap`);
+						
+						console.log(`Filtered ${heatmapData.length} records for ${selectedStation ? selectedStation.name : (selectedCity === 'all' ? 'all cities' : selectedCity)} in ${calendarSelectedYear} heatmap`);
 						return heatmapData;
 					})()} 
 					selectedStation={activeStation}
-					title="Year-to-Date Air Quality Overview - {activeStation ? activeStation.name : (selectedCity === 'all' ? 'All Cities' : (CITY_INFO[selectedCity]?.displayName || selectedCity.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())))}"
+					title="Air Quality Calendar View"
+					stationName="{activeStation ? activeStation.name : (selectedCity === 'all' ? 'All Cities' : (CITY_INFO[selectedCity]?.displayName || selectedCity.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())))}"
+					availableYears={(() => {
+						// Use same filtering logic for available years
+						let baseData = getDataUpToCurrentTime(allData);
+						console.log('Base data after current time filter:', baseData.length, 'records');
+						
+						// Apply city filter if selected
+						if (selectedCity !== 'all') {
+							baseData = baseData.filter(reading => reading.city === selectedCity);
+							console.log('After city filter:', baseData.length, 'records for city:', selectedCity);
+						}
+						
+						// Apply station filter if selected
+						if (selectedStation) {
+							baseData = baseData.filter(reading => reading.station_id === selectedStation.id);
+							console.log('After station filter:', baseData.length, 'records for station:', selectedStation.id);
+						}
+						
+						const years = [...new Set(baseData.map(r => new Date(r.datetime).getFullYear()))].sort((a, b) => b - a);
+						console.log('Available years calculated for calendar:', years);
+						return years;
+					})()}
+					selectedYear={calendarSelectedYear}
+					selectedPollutant={calendarSelectedPollutant}
+					on:yearChange={(e) => calendarSelectedYear = e.detail}
+					on:pollutantChange={(e) => calendarSelectedPollutant = e.detail}
 				/>
 			</div>
 		</section>

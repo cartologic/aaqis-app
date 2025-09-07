@@ -25,28 +25,23 @@
 	let showStationDropdown = false;
 	let showDateDropdown = false;
 	
-	// Smart city options with availability detection
+	// Always show all cities from the original stations data (no cross-filtering)
 	$: cities = [...new Set(stations.map(s => s.city))].map(city => {
-		const isAvailable = filterMetadata.availableCities.length === 0 || filterMetadata.availableCities.includes(city);
 		const stationCount = stations.filter(s => s.city === city).length;
-		const availableStationCount = stations.filter(s => s.city === city && filterMetadata.availableStations.includes(s.id)).length;
+		const availableStationCount = filterMetadata.availableStations.length > 0 
+			? stations.filter(s => s.city === city && filterMetadata.availableStations.includes(s.id)).length 
+			: stationCount;
 		
 		return {
 			id: city,
-			name: CITY_INFO[city]?.displayName || city,
+			name: CITY_INFO[city]?.displayName || city.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
 			emoji: CITY_INFO[city]?.emoji || '🌍',
 			stationCount,
-			availableStationCount: filterMetadata.availableStations.length > 0 ? availableStationCount : stationCount,
-			isAvailable,
-			isFiltered: filterMetadata.filtersApplied.length > 0 && !filterMetadata.filtersApplied.includes('city')
+			availableStationCount,
+			isAvailable: true, // Always show all cities
+			hasData: availableStationCount > 0
 		};
-	}).sort((a, b) => {
-		// Sort available cities first, then by name
-		if (a.isAvailable !== b.isAvailable) {
-			return a.isAvailable ? -1 : 1;
-		}
-		return a.name.localeCompare(b.name);
-	});
+	}).sort((a, b) => a.name.localeCompare(b.name));
 	
 	// Smart station filtering with availability detection
 	$: filteredStations = (selectedCity === 'all' ? stations : stations.filter(s => s.city === selectedCity))
@@ -78,10 +73,17 @@
 	function selectCity(cityId: string) {
 		selectedCity = cityId;
 		if (cityId !== 'all') {
-			// Auto-select first station in the city
-			const firstStation = filteredStations[0];
+			// Auto-select first station in the city (always available)
+			const cityStations = stations.filter(s => s.city === cityId)
+				.sort((a, b) => a.name.localeCompare(b.name));
+			
+			const firstStation = cityStations[0];
 			if (firstStation) {
-				selectStation(firstStation);
+				selectedStation = firstStation;
+				dispatch('stationSelect', firstStation);
+			} else {
+				selectedStation = null;
+				dispatch('stationSelect', null);
 			}
 		} else {
 			selectedStation = null;
@@ -207,9 +209,8 @@
 							<hr class="my-2" />
 							{#each cities as city}
 								<button 
-									class="w-full text-left px-3 py-2 rounded-md transition-colors duration-150 {selectedCity === city.id ? 'bg-blue-50 text-blue-700' : city.isAvailable ? 'hover:bg-gray-50' : 'opacity-50 cursor-not-allowed bg-gray-25'}"
-									on:click={() => city.isAvailable && selectCity(city.id)}
-									disabled={!city.isAvailable}
+									class="w-full text-left px-3 py-2 rounded-md transition-colors duration-150 {selectedCity === city.id ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50'}"
+									on:click={() => selectCity(city.id)}
 								>
 									<div class="flex items-center justify-between">
 										<div class="flex items-center space-x-3">
@@ -217,18 +218,12 @@
 											<div>
 												<div class="font-medium flex items-center space-x-2">
 													<span>{city.name}</span>
-													{#if !city.isAvailable}
+													{#if !city.hasData}
 														<span class="text-xs bg-gray-200 text-gray-600 px-1 rounded">No data</span>
-													{:else if city.isFiltered}
-														<span class="text-xs bg-blue-100 text-blue-600 px-1 rounded">Filtered</span>
 													{/if}
 												</div>
 												<div class="text-xs text-gray-500">
-													{#if city.isFiltered && city.availableStationCount !== city.stationCount}
-														{city.availableStationCount}/{city.stationCount} stations available
-													{:else}
-														{city.stationCount} stations
-													{/if}
+													{city.stationCount} {city.stationCount === 1 ? 'station' : 'stations'}
 												</div>
 											</div>
 										</div>

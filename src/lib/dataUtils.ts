@@ -338,15 +338,26 @@ function getMostCommonRating(ratings: any[]): any {
 }
 
 export function simulateCurrentTime(): Date {
-	// Simulate that we're somewhere in the middle of 2024
-	// This allows us to show "historical" data as if it's current
-	// Set to end of June 15, 2024 to ensure we capture all data for that day
-	return new Date('2024-06-15T23:59:59Z');
+	// Return actual current time instead of simulated time
+	const now = new Date();
+	console.log('Current simulated time:', now.toISOString());
+	return now;
 }
 
 export function getDataUpToCurrentTime(data: AirQualityReading[]): AirQualityReading[] {
 	const currentTime = simulateCurrentTime();
-	return data.filter((reading) => new Date(reading.datetime) <= currentTime);
+	const filteredData = data.filter((reading) => new Date(reading.datetime) <= currentTime);
+	console.log(`Filtered data from ${data.length} to ${filteredData.length} records (up to ${currentTime.toISOString()})`);
+	
+	// Log year distribution after filtering
+	const yearCounts = filteredData.reduce((acc, reading) => {
+		const year = new Date(reading.datetime).getFullYear();
+		acc[year] = (acc[year] || 0) + 1;
+		return acc;
+	}, {} as Record<number, number>);
+	console.log('Year distribution after current time filter:', yearCounts);
+	
+	return filteredData;
 }
 
 // Centralized emoji function for air quality ratings

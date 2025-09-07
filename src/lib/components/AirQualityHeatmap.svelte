@@ -1,33 +1,187 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
+	import { onMount, onDestroy, createEventDispatcher } from 'svelte';
 	import type { AirQualityReading, Station } from '$lib/types';
 	import { browser } from '$app/environment';
+	
+	const dispatch = createEventDispatcher();
 
 	export let data: AirQualityReading[] = [];
 	export let selectedStation: Station | null = null;
 	export let title: string = 'Year-to-Date Air Quality';
+	export let selectedYear: number = new Date().getFullYear();
+	export let selectedPollutant: string = 'overall_aqi';
+	export let stationName: string = '';
+	export let availableYears: number[] = [];
 
 	let chartContainer: HTMLDivElement;
 	let chart: any;
 
-	// Function to get AQI color based on value
-	function getAQIColor(aqi: number): string {
-		if (aqi <= 50) return '#00e400'; // Good - Green
-		if (aqi <= 100) return '#ffff00'; // Moderate - Yellow
-		if (aqi <= 150) return '#ff7e00'; // Unhealthy for Sensitive Groups - Orange
-		if (aqi <= 200) return '#ff0000'; // Unhealthy - Red
-		if (aqi <= 300) return '#8f3f97'; // Very Unhealthy - Purple
-		return '#7e0023'; // Hazardous - Maroon
+	// Calculate available years from data only if not provided by parent
+	$: {
+		if (data && data.length > 0) {
+			// Only calculate from data if availableYears prop is empty
+			if (availableYears.length === 0) {
+				const years = [...new Set(data.map(r => new Date(r.datetime).getFullYear()))].sort((a, b) => b - a);
+				availableYears = years;
+				console.log('Calculated available years from data:', years);
+			} else {
+				console.log('Using available years from parent:', availableYears);
+			}
+			
+			// Auto-select the current year if available, otherwise the most recent year
+			if (!availableYears.includes(selectedYear)) {
+				selectedYear = availableYears.includes(new Date().getFullYear()) ? new Date().getFullYear() : availableYears[0];
+			}
+		}
 	}
 
-	// Function to get AQI level description
-	function getAQILevel(aqi: number): string {
-		if (aqi <= 50) return 'Good';
-		if (aqi <= 100) return 'Moderate';
-		if (aqi <= 150) return 'Unhealthy for Sensitive Groups';
-		if (aqi <= 200) return 'Unhealthy';
-		if (aqi <= 300) return 'Very Unhealthy';
-		return 'Hazardous';
+	// Function to get color and level based on pollutant type and value using WHO standards
+	function getPollutantColor(value: number, pollutant: string): string {
+		if (pollutant.includes('aqi')) {
+			// AQI-based coloring (US EPA standards)
+			if (value <= 50) return '#00e400'; // Good - Green
+			if (value <= 100) return '#ffff00'; // Moderate - Yellow
+			if (value <= 150) return '#ff7e00'; // Unhealthy for Sensitive Groups - Orange
+			if (value <= 200) return '#ff0000'; // Unhealthy - Red
+			if (value <= 300) return '#8f3f97'; // Very Unhealthy - Purple
+			return '#7e0023'; // Hazardous - Maroon
+		} else {
+			// Raw concentration values based on WHO Air Quality Guidelines 2021
+			switch (pollutant) {
+				case 'pm2_5':
+					// WHO 2021: Annual mean: 5 μg/m³, 24-hour mean: 15 μg/m³
+					if (value <= 5) return '#00e400';   // Excellent (WHO annual)
+					if (value <= 15) return '#80e400';  // Good (WHO 24h)
+					if (value <= 25) return '#ffff00';  // Fair 
+					if (value <= 50) return '#ff7e00';  // Poor
+					if (value <= 75) return '#ff0000';  // Very Poor
+					return '#8f3f97';                   // Extremely Poor
+				
+				case 'pm10':
+					// WHO 2021: Annual mean: 15 μg/m³, 24-hour mean: 45 μg/m³
+					if (value <= 15) return '#00e400';  // Excellent (WHO annual)
+					if (value <= 45) return '#80e400';  // Good (WHO 24h)
+					if (value <= 75) return '#ffff00';  // Fair
+					if (value <= 100) return '#ff7e00'; // Poor
+					if (value <= 150) return '#ff0000'; // Very Poor
+					return '#8f3f97';                   // Extremely Poor
+				
+				case 'o3':
+					// WHO 2021: Peak season: 60 μg/m³, 8-hour mean: 100 μg/m³
+					if (value <= 60) return '#00e400';  // Excellent (WHO peak season)
+					if (value <= 100) return '#80e400'; // Good (WHO 8h)
+					if (value <= 140) return '#ffff00'; // Fair
+					if (value <= 180) return '#ff7e00'; // Poor
+					if (value <= 240) return '#ff0000'; // Very Poor
+					return '#8f3f97';                   // Extremely Poor
+				
+				case 'no2':
+					// WHO 2021: Annual mean: 10 μg/m³, 24-hour mean: 25 μg/m³
+					if (value <= 10) return '#00e400';  // Excellent (WHO annual)
+					if (value <= 25) return '#80e400';  // Good (WHO 24h)
+					if (value <= 40) return '#ffff00';  // Fair
+					if (value <= 70) return '#ff7e00';  // Poor
+					if (value <= 100) return '#ff0000'; // Very Poor
+					return '#8f3f97';                   // Extremely Poor
+				
+				case 'so2':
+					// WHO 2021: 24-hour mean: 40 μg/m³
+					if (value <= 20) return '#00e400';  // Excellent
+					if (value <= 40) return '#80e400';  // Good (WHO 24h)
+					if (value <= 80) return '#ffff00';  // Fair
+					if (value <= 120) return '#ff7e00'; // Poor
+					if (value <= 200) return '#ff0000'; // Very Poor
+					return '#8f3f97';                   // Extremely Poor
+				
+				case 'co':
+					// WHO 2021: 24-hour mean: 4 mg/m³
+					if (value <= 2) return '#00e400';   // Excellent
+					if (value <= 4) return '#80e400';   // Good (WHO 24h)
+					if (value <= 8) return '#ffff00';   // Fair
+					if (value <= 15) return '#ff7e00';  // Poor
+					if (value <= 25) return '#ff0000';  // Very Poor
+					return '#8f3f97';                   // Extremely Poor
+				
+				default:
+					// Fallback for unknown pollutants
+					const ratio = Math.min(value / 100, 1);
+					if (ratio <= 0.2) return '#00e400';
+					if (ratio <= 0.4) return '#80e400';
+					if (ratio <= 0.6) return '#ffff00';
+					if (ratio <= 0.8) return '#ff7e00';
+					return '#ff0000';
+			}
+		}
+	}
+
+	function getPollutantLevel(value: number, pollutant: string): string {
+		if (pollutant.includes('aqi')) {
+			if (value <= 50) return 'Good';
+			if (value <= 100) return 'Moderate';
+			if (value <= 150) return 'Unhealthy for Sensitive Groups';
+			if (value <= 200) return 'Unhealthy';
+			if (value <= 300) return 'Very Unhealthy';
+			return 'Hazardous';
+		} else {
+			// WHO-based quality levels for raw concentrations
+			const unit = pollutant === 'co' ? 'mg/m³' : 'μg/m³';
+			let quality = '';
+			
+			switch (pollutant) {
+				case 'pm2_5':
+					if (value <= 5) quality = 'Excellent';
+					else if (value <= 15) quality = 'Good';
+					else if (value <= 25) quality = 'Fair';
+					else if (value <= 50) quality = 'Poor';
+					else if (value <= 75) quality = 'Very Poor';
+					else quality = 'Extremely Poor';
+					break;
+				case 'pm10':
+					if (value <= 15) quality = 'Excellent';
+					else if (value <= 45) quality = 'Good';
+					else if (value <= 75) quality = 'Fair';
+					else if (value <= 100) quality = 'Poor';
+					else if (value <= 150) quality = 'Very Poor';
+					else quality = 'Extremely Poor';
+					break;
+				case 'o3':
+					if (value <= 60) quality = 'Excellent';
+					else if (value <= 100) quality = 'Good';
+					else if (value <= 140) quality = 'Fair';
+					else if (value <= 180) quality = 'Poor';
+					else if (value <= 240) quality = 'Very Poor';
+					else quality = 'Extremely Poor';
+					break;
+				case 'no2':
+					if (value <= 10) quality = 'Excellent';
+					else if (value <= 25) quality = 'Good';
+					else if (value <= 40) quality = 'Fair';
+					else if (value <= 70) quality = 'Poor';
+					else if (value <= 100) quality = 'Very Poor';
+					else quality = 'Extremely Poor';
+					break;
+				case 'so2':
+					if (value <= 20) quality = 'Excellent';
+					else if (value <= 40) quality = 'Good';
+					else if (value <= 80) quality = 'Fair';
+					else if (value <= 120) quality = 'Poor';
+					else if (value <= 200) quality = 'Very Poor';
+					else quality = 'Extremely Poor';
+					break;
+				case 'co':
+					if (value <= 2) quality = 'Excellent';
+					else if (value <= 4) quality = 'Good';
+					else if (value <= 8) quality = 'Fair';
+					else if (value <= 15) quality = 'Poor';
+					else if (value <= 25) quality = 'Very Poor';
+					else quality = 'Extremely Poor';
+					break;
+				default:
+					quality = 'Unknown';
+			}
+			
+			return `${value.toFixed(1)} ${unit} - ${quality}`;
+		}
 	}
 
 	// Function to prepare heatmap data for ECharts
@@ -37,13 +191,14 @@
 			return [];
 		}
 
-		// Filter data by selected station if specified
-		let filteredData = data;
+		// Filter data by selected station and year
+		let filteredData = data.filter(reading => new Date(reading.datetime).getFullYear() === selectedYear);
+		
 		if (selectedStation) {
-			filteredData = data.filter(reading => reading.station_id === selectedStation.id);
-			console.log(`Filtered to ${filteredData.length} readings for station ${selectedStation.name}`);
+			filteredData = filteredData.filter(reading => reading.station_id === selectedStation.id);
+			console.log(`Filtered to ${filteredData.length} readings for station ${selectedStation.name} in ${selectedYear}`);
 		} else {
-			console.log(`Processing ${data.length} readings for all stations`);
+			console.log(`Processing ${filteredData.length} readings for all stations in ${selectedYear}`);
 		}
 
 		if (filteredData.length === 0) {
@@ -57,15 +212,15 @@
 		filteredData.forEach(reading => {
 			const date = new Date(reading.datetime);
 			const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD format
-			const aqiValue = reading.overall_aqi;
+			const pollutantValue = reading[selectedPollutant as keyof AirQualityReading] as number;
 
 			if (!dailyData[dateKey]) {
 				dailyData[dateKey] = { total: 0, count: 0, values: [] };
 			}
 
-			dailyData[dateKey].total += aqiValue;
+			dailyData[dateKey].total += pollutantValue;
 			dailyData[dateKey].count += 1;
-			dailyData[dateKey].values.push(aqiValue);
+			dailyData[dateKey].values.push(pollutantValue);
 		});
 
 		// Convert to ECharts format: [date, value]
@@ -96,12 +251,8 @@
 				chart = null;
 			}
 
-			// Determine the year from the data
-			let dataYear = new Date().getFullYear();
-			if (data.length > 0) {
-				const availableYears = data.map((r: AirQualityReading) => new Date(r.datetime).getFullYear());
-				dataYear = availableYears.length > 0 ? Math.max(...availableYears) : dataYear;
-			}
+			// Use selected year
+			const dataYear = selectedYear;
 
 			// Initialize chart
 			chart = init(chartContainer);
@@ -125,16 +276,19 @@
 							month: 'long',
 							day: 'numeric'
 						});
-						const aqi = params.data[1];
-						const level = getAQILevel(aqi);
-						const color = getAQIColor(aqi);
+						const value = params.data[1];
+						const level = getPollutantLevel(value, selectedPollutant);
+						const color = getPollutantColor(value, selectedPollutant);
+						const pollutantName = selectedPollutant.includes('aqi') ? 
+							selectedPollutant.replace('_aqi', '').toUpperCase().replace('_', '.') + ' AQI' :
+							selectedPollutant.toUpperCase().replace('_', '.');
 						
 						return `
 							<div style="padding: 8px;">
 								<div style="font-weight: 600; margin-bottom: 4px;">${date}</div>
 								<div style="display: flex; align-items: center; gap: 6px;">
 									<span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: ${color};"></span>
-									<span>AQI: <strong>${aqi}</strong></span>
+									<span>${pollutantName}: <strong>${selectedPollutant.includes('aqi') ? Math.round(value) : value.toFixed(1)}</strong></span>
 								</div>
 								<div style="margin-top: 2px; color: #6b7280; font-size: 12px;">${level}</div>
 							</div>
@@ -149,26 +303,123 @@
 						fontSize: 13
 					}
 				},
-				visualMap: {
-					min: 0,
-					max: 300,
-					type: 'piecewise',
-					orient: 'horizontal',
-					left: 'center',
-					top: 55,
-					pieces: [
-						{ min: 0, max: 50, color: '#00e400', label: 'Good (0-50)' },
-						{ min: 51, max: 100, color: '#ffff00', label: 'Moderate (51-100)' },
-						{ min: 101, max: 150, color: '#ff7e00', label: 'Unhealthy for Sensitive (101-150)' },
-						{ min: 151, max: 200, color: '#ff0000', label: 'Unhealthy (151-200)' },
-						{ min: 201, max: 300, color: '#8f3f97', label: 'Very Unhealthy (201-300)' },
-						{ min: 301, color: '#7e0023', label: 'Hazardous (300+)' }
-					],
-					textStyle: {
-						fontSize: 11,
-						color: '#374151'
+				visualMap: (() => {
+					if (selectedPollutant.includes('aqi')) {
+						// AQI-based visualization (US EPA standards)
+						return {
+							min: 0,
+							max: 300,
+							type: 'piecewise',
+							orient: 'horizontal',
+							left: 'center',
+							top: 55,
+							pieces: [
+								{ min: 0, max: 50, color: '#00e400', label: 'Good (0-50)' },
+								{ min: 51, max: 100, color: '#ffff00', label: 'Moderate (51-100)' },
+								{ min: 101, max: 150, color: '#ff7e00', label: 'Unhealthy for Sensitive (101-150)' },
+								{ min: 151, max: 200, color: '#ff0000', label: 'Unhealthy (151-200)' },
+								{ min: 201, max: 300, color: '#8f3f97', label: 'Very Unhealthy (201-300)' },
+								{ min: 301, color: '#7e0023', label: 'Hazardous (300+)' }
+							],
+							textStyle: {
+								fontSize: 11,
+								color: '#374151'
+							}
+						};
+					} else {
+						// WHO-based visualization for raw concentrations
+						const unit = selectedPollutant === 'co' ? 'mg/m³' : 'μg/m³';
+						
+						switch (selectedPollutant) {
+							case 'pm2_5':
+								return {
+									min: 0, max: 100, type: 'piecewise', orient: 'horizontal', left: 'center', top: 55,
+									pieces: [
+										{ min: 0, max: 5, color: '#00e400', label: 'Excellent (≤5)' },
+										{ min: 6, max: 15, color: '#80e400', label: 'Good (6-15)' },
+										{ min: 16, max: 25, color: '#ffff00', label: 'Fair (16-25)' },
+										{ min: 26, max: 50, color: '#ff7e00', label: 'Poor (26-50)' },
+										{ min: 51, max: 75, color: '#ff0000', label: 'Very Poor (51-75)' },
+										{ min: 76, color: '#8f3f97', label: 'Extremely Poor (75+)' }
+									],
+									textStyle: { fontSize: 11, color: '#374151' }
+								};
+							case 'pm10':
+								return {
+									min: 0, max: 200, type: 'piecewise', orient: 'horizontal', left: 'center', top: 55,
+									pieces: [
+										{ min: 0, max: 15, color: '#00e400', label: 'Excellent (≤15)' },
+										{ min: 16, max: 45, color: '#80e400', label: 'Good (16-45)' },
+										{ min: 46, max: 75, color: '#ffff00', label: 'Fair (46-75)' },
+										{ min: 76, max: 100, color: '#ff7e00', label: 'Poor (76-100)' },
+										{ min: 101, max: 150, color: '#ff0000', label: 'Very Poor (101-150)' },
+										{ min: 151, color: '#8f3f97', label: 'Extremely Poor (150+)' }
+									],
+									textStyle: { fontSize: 11, color: '#374151' }
+								};
+							case 'o3':
+								return {
+									min: 0, max: 300, type: 'piecewise', orient: 'horizontal', left: 'center', top: 55,
+									pieces: [
+										{ min: 0, max: 60, color: '#00e400', label: 'Excellent (≤60)' },
+										{ min: 61, max: 100, color: '#80e400', label: 'Good (61-100)' },
+										{ min: 101, max: 140, color: '#ffff00', label: 'Fair (101-140)' },
+										{ min: 141, max: 180, color: '#ff7e00', label: 'Poor (141-180)' },
+										{ min: 181, max: 240, color: '#ff0000', label: 'Very Poor (181-240)' },
+										{ min: 241, color: '#8f3f97', label: 'Extremely Poor (240+)' }
+									],
+									textStyle: { fontSize: 11, color: '#374151' }
+								};
+							case 'no2':
+								return {
+									min: 0, max: 150, type: 'piecewise', orient: 'horizontal', left: 'center', top: 55,
+									pieces: [
+										{ min: 0, max: 10, color: '#00e400', label: 'Excellent (≤10)' },
+										{ min: 11, max: 25, color: '#80e400', label: 'Good (11-25)' },
+										{ min: 26, max: 40, color: '#ffff00', label: 'Fair (26-40)' },
+										{ min: 41, max: 70, color: '#ff7e00', label: 'Poor (41-70)' },
+										{ min: 71, max: 100, color: '#ff0000', label: 'Very Poor (71-100)' },
+										{ min: 101, color: '#8f3f97', label: 'Extremely Poor (100+)' }
+									],
+									textStyle: { fontSize: 11, color: '#374151' }
+								};
+							case 'so2':
+								return {
+									min: 0, max: 250, type: 'piecewise', orient: 'horizontal', left: 'center', top: 55,
+									pieces: [
+										{ min: 0, max: 20, color: '#00e400', label: 'Excellent (≤20)' },
+										{ min: 21, max: 40, color: '#80e400', label: 'Good (21-40)' },
+										{ min: 41, max: 80, color: '#ffff00', label: 'Fair (41-80)' },
+										{ min: 81, max: 120, color: '#ff7e00', label: 'Poor (81-120)' },
+										{ min: 121, max: 200, color: '#ff0000', label: 'Very Poor (121-200)' },
+										{ min: 201, color: '#8f3f97', label: 'Extremely Poor (200+)' }
+									],
+									textStyle: { fontSize: 11, color: '#374151' }
+								};
+							case 'co':
+								return {
+									min: 0, max: 30, type: 'piecewise', orient: 'horizontal', left: 'center', top: 55,
+									pieces: [
+										{ min: 0, max: 2, color: '#00e400', label: 'Excellent (≤2)' },
+										{ min: 3, max: 4, color: '#80e400', label: 'Good (3-4)' },
+										{ min: 5, max: 8, color: '#ffff00', label: 'Fair (5-8)' },
+										{ min: 9, max: 15, color: '#ff7e00', label: 'Poor (9-15)' },
+										{ min: 16, max: 25, color: '#ff0000', label: 'Very Poor (16-25)' },
+										{ min: 26, color: '#8f3f97', label: 'Extremely Poor (25+)' }
+									],
+									textStyle: { fontSize: 11, color: '#374151' }
+								};
+							default:
+								// Fallback
+								return {
+									min: 0, max: 100, type: 'continuous', orient: 'horizontal', left: 'center', top: 55,
+									inRange: { color: ['#00e400', '#80e400', '#ffff00', '#ff7e00', '#ff0000'] },
+									text: [`High (${unit})`, `Low (${unit})`],
+									textStyle: { fontSize: 11, color: '#374151' }
+								};
+						}
 					}
-				},
+				})(),
 				calendar: {
 					top: 120,
 					left: 30,
@@ -237,8 +488,14 @@
 		}
 	}
 
-	// Reactive statement to update chart when data or selectedStation changes
-	$: if (data && chartContainer && browser) {
+	// Reactive statement to update chart when data, selectedStation, selectedYear, or selectedPollutant changes
+	$: if (data && chartContainer && browser && selectedYear && selectedPollutant) {
+		console.log('Chart recreation triggered:', { 
+			dataLength: data.length, 
+			selectedYear, 
+			selectedPollutant,
+			availableYears 
+		});
 		createChart();
 	}
 
@@ -260,31 +517,65 @@
 	});
 </script>
 
-<div class="w-full">
-	<div class="mb-6">
-		<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+<div class="w-full bg-white rounded-xl shadow-lg overflow-hidden">
+	<!-- Header with Controls -->
+	<div class="p-6 border-b border-gray-200">
+		<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 			<div>
 				<h3 class="text-xl font-bold text-gray-800 mb-2">{title}</h3>
 				<p class="text-sm text-gray-600">
-					{#if selectedStation}
-						Daily average AQI values for {selectedStation.name}. Hover over squares for details.
-					{:else}
-						Daily average AQI values for all stations. Hover over squares for details.
-					{/if}
+					{stationName} - Daily air quality patterns. Hover over squares for details.
 				</p>
 			</div>
-			{#if selectedStation}
-				<div class="mt-3 sm:mt-0">
-					<div class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-						📍 {selectedStation.name}
+			<div class="flex flex-col sm:flex-row gap-3">
+				<!-- Year Selection -->
+				{#if availableYears.length > 0}
+					<div class="flex items-center gap-2">
+						<label for="calendar-year-heatmap" class="text-sm font-medium text-gray-700 whitespace-nowrap">Year:</label>
+						<select 
+							id="calendar-year-heatmap"
+							value={selectedYear}
+							on:change={(e) => dispatch('yearChange', parseInt(e.target.value))}
+							class="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white min-w-[100px]"
+						>
+							{#each availableYears as year}
+								<option value={year}>{year}</option>
+							{/each}
+						</select>
 					</div>
+				{/if}
+				<!-- Pollutant Selection -->
+				<div class="flex items-center gap-2">
+					<label for="calendar-pollutant-heatmap" class="text-sm font-medium text-gray-700 whitespace-nowrap">Metric:</label>
+					<select 
+						id="calendar-pollutant-heatmap"
+						value={selectedPollutant}
+						on:change={(e) => dispatch('pollutantChange', e.target.value)}
+						class="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white min-w-[140px]"
+					>
+						<option value="overall_aqi">Overall AQI</option>
+						<option value="pm2_5_aqi">PM2.5 AQI</option>
+						<option value="pm10_aqi">PM10 AQI</option>
+						<option value="o3_aqi">O₃ AQI</option>
+						<option value="no2_aqi">NO₂ AQI</option>
+						<option value="so2_aqi">SO₂ AQI</option>
+						<option value="co_aqi">CO AQI</option>
+						<option value="pm2_5">PM2.5 (μg/m³)</option>
+						<option value="pm10">PM10 (μg/m³)</option>
+						<option value="o3">O₃ (μg/m³)</option>
+						<option value="no2">NO₂ (μg/m³)</option>
+						<option value="so2">SO₂ (μg/m³)</option>
+						<option value="co">CO (mg/m³)</option>
+					</select>
 				</div>
-			{/if}
+			</div>
 		</div>
 	</div>
+
+	<!-- Chart Content -->
 	
 	{#if data && data.length > 0}
-		<div class="bg-gradient-to-br from-white to-gray-50 p-8 rounded-2xl shadow-2xl border border-gray-200 relative overflow-hidden">
+		<div class="p-8 relative">
 			<!-- Decorative background elements -->
 			<div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-100/20 to-green-100/20 rounded-full blur-3xl"></div>
 			<div class="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-yellow-100/20 to-orange-100/20 rounded-full blur-3xl"></div>
@@ -294,7 +585,7 @@
 			</div>
 		</div>
 	{:else}
-		<div class="flex items-center justify-center h-40 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-dashed border-gray-300">
+		<div class="flex items-center justify-center h-40 bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-dashed border-gray-300">
 			<div class="text-center text-gray-500">
 				<div class="text-5xl mb-3">📅</div>
 				<p class="text-lg font-semibold mb-1">No data available</p>
@@ -302,7 +593,7 @@
 					{#if selectedStation}
 						No data found for {selectedStation.name}
 					{:else}
-						Year-to-date heatmap will appear when data is loaded
+						Calendar heatmap will appear when data is loaded
 					{/if}
 				</p>
 			</div>
