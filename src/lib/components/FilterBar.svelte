@@ -365,8 +365,9 @@
 							<div class="border-t border-gray-200 p-3">
 								<div class="space-y-3">
 									<div>
-								<label class="block text-xs font-medium text-gray-700 mb-1">Start Date</label>
+								<label for="start-date-input" class="block text-xs font-medium text-gray-700 mb-1">Start Date</label>
 								<input 
+									id="start-date-input"
 									type="date" 
 									bind:value={startDate}
 									min={filterMetadata?.dateRange?.min ? new Date(filterMetadata.dateRange.min).toISOString().split('T')[0] : ''}
@@ -381,8 +382,9 @@
 								{/if}
 							</div>
 							<div>
-								<label class="block text-xs font-medium text-gray-700 mb-1">End Date</label>
+								<label for="end-date-input" class="block text-xs font-medium text-gray-700 mb-1">End Date</label>
 								<input 
+									id="end-date-input"
 									type="date" 
 									bind:value={endDate}
 									min={filterMetadata?.dateRange?.min ? new Date(filterMetadata.dateRange.min).toISOString().split('T')[0] : ''}
