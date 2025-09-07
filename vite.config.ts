@@ -11,5 +11,11 @@ export default defineConfig({
 		fs: {
 			allow: ['..', '..']
 		}
+	},
+	build: {
+		minify: 'esbuild',
+		esbuildOptions: {
+			drop: ['console', 'debugger']
+		}
 	}
 });

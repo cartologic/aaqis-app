@@ -116,8 +116,8 @@
 		let baseData = getDataUpToCurrentTime(allData);
 		
 		// Only filter by station if selected (not by city anymore)
-		if (selectedStation) {
-			baseData = baseData.filter(reading => reading.station_id === selectedStation.id);
+		if (selectedStation?.id) {
+			baseData = baseData.filter(reading => reading.station_id === selectedStation!.id);
 		}
 		const availableYears = [...new Set(baseData.map(r => new Date(r.datetime).getFullYear()))];
 		
@@ -757,8 +757,8 @@
 						// Don't filter by city anymore - show all cities
 						
 						// Apply station filter if selected (this is the key fix!)
-						if (selectedStation) {
-							baseData = baseData.filter(reading => reading.station_id === selectedStation.id);
+						if (selectedStation?.id) {
+							baseData = baseData.filter(reading => reading.station_id === selectedStation!.id);
 						}
 						
 						// Apply year filter for calendar
@@ -780,11 +780,13 @@
 						// Don't filter by city anymore - show all cities
 						
 						// Apply station filter if selected
-						if (selectedStation) {
-							baseData = baseData.filter(reading => reading.station_id === selectedStation.id);
+						if (selectedStation?.id) {
+							baseData = baseData.filter(reading => reading.station_id === selectedStation!.id);
+							console.log('After station filter:', baseData.length, 'records for station:', selectedStation!.id);
 						}
 						
 						const years = [...new Set(baseData.map(r => new Date(r.datetime).getFullYear()))].sort((a, b) => b - a);
+						console.log('Available years calculated for calendar:', years);
 						return years;
 					})()}
 					selectedYear={calendarSelectedYear}
