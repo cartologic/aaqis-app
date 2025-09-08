@@ -252,10 +252,15 @@
 		// Initial update
 		updateVisibleStations();
 		
-		// Fit to all stations initially with delay to ensure map is ready
+		// Initial map positioning: If we have a selected station, fly to it; otherwise fit all stations
 		if (stations.length > 0) {
-			console.log('Fitting to stations on load:', stations.length);
-			setTimeout(() => fitToStations(), 1000);
+			if (selectedStation) {
+				console.log('Flying to initially selected station on load:', selectedStation.name);
+				setTimeout(() => flyToStation(selectedStation), 1000);
+			} else {
+				console.log('No initial station selected, fitting to all stations on load:', stations.length);
+				setTimeout(() => fitToStations(), 1000);
+			}
 		}
 	}
 
@@ -274,30 +279,20 @@
 
 	// Geolocation handlers
 	function handleGeolocate(event: any) {
-		console.log('User location found:', event.coords);
+		console.log('User location found via GeolocateControl:', event.coords);
 		userLocation = {
 			lng: event.coords.longitude,
 			lat: event.coords.latitude
 		};
 		
-		// Auto fly to user location if no station is selected
-		if (map && !selectedStation) {
-			map.flyTo({
-				center: [event.coords.longitude, event.coords.latitude],
-				zoom: 12,
-				duration: 2000
-			});
-		}
-		
-		// Notify parent component about user location for nearest station finding
+		// Always notify parent component about user location for nearest station finding
 		if (onUserLocationChange) {
 			onUserLocationChange(userLocation);
 		}
 		
-		// Trigger a bounds update to potentially find nearest stations (disabled to prevent loops)
-		// setTimeout(() => {
-		// 	mapBoundsUpdateTrigger++;
-		// }, 100);
+		// If no station is currently selected, this will trigger parent to find nearest station
+		// which will then call flyToStation via the selectedStation effect
+		console.log('GeolocateControl activated - parent will handle nearest station selection');
 	}
 
 	function handleTrackUserLocationStart() {
@@ -331,17 +326,19 @@
 		<!-- Markers will be rendered inside isMapReady block to avoid duplication -->
 		
 		{#if isMapReady}
-			<!-- Geolocation Control -->
+			<!-- Enhanced Geolocation Control -->
 			<GeolocateControl
 				position="top-right"
-				positionOptions={{ enableHighAccuracy: true, timeout: 6000 }}
+				positionOptions={{ enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }}
 				trackUserLocation={true}
 				showAccuracyCircle={true}
 				showUserLocation={true}
-				fitBoundsOptions={{ maxZoom: 15 }}
+				fitBoundsOptions={{ maxZoom: 13, padding: 50 }}
 				ongeolocate={handleGeolocate}
 				ontrackuserlocationstart={handleTrackUserLocationStart}
 				ontrackuserlocationend={handleTrackUserLocationEnd}
+				onerror={(ev) => console.warn('GeolocateControl error:', ev.message)}
+				onoutofmaxbounds={() => console.log('User location out of max bounds')}
 			/>
 
 			<!-- GeoJSON source with all stations (removed QueryRenderedFeatures to prevent loops) -->

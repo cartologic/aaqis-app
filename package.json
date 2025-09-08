@@ -34,6 +34,7 @@
 		"lucide-svelte": "^0.542.0",
 		"maplibre-gl": "^5.7.0",
 		"parquet-wasm": "^0.6.1",
+		"posthog-js": "^1.261.7",
 		"svelte-maplibre-gl": "^1.0.1",
 		"tailwindcss": "^4.1.12"
 	}

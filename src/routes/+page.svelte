@@ -84,18 +84,19 @@
 		filteredData = currentData;
 		visibleStations = stations; // Initialize with all stations
 		
-		// Find nearest station (reading will be calculated automatically via derived values)
+		// Find nearest station and auto-select it for user-centric initialization
 		if (userLocation && stations.length > 0) {
 			nearestStation = findNearestStation(userLocation, stations);
-			// currentReading and locationMessage will be set automatically via derived/effect values
-		}
-		
-		// Note: currentReading and locationMessage are now handled automatically via derived/effect values
-		
-		// Auto-select station based on detected location
-		if (nearestStation) {
-			selectedCity = nearestStation.city;
-			selectedStation = nearestStation;
+			console.log('Found nearest station to user location:', nearestStation?.name);
+			
+			// Auto-select nearest station for better UX - map will initialize at this location
+			if (nearestStation) {
+				selectedCity = nearestStation.city;
+				selectedStation = nearestStation;
+				console.log(`Auto-selected nearest station: ${nearestStation.name} in ${nearestStation.city}`);
+			}
+		} else {
+			console.log('No user location or stations available for nearest station selection');
 		}
 
 		isLoading = false;
@@ -350,23 +351,26 @@
 	
 	// Handle user location change from map geolocation
 	function handleUserLocationChange(location: {lng: number, lat: number} | null) {
-		console.log('User location from map:', location);
-		if (location) {
-			// Create a UserLocation object
-			const newUserLocation = {
+		console.log('User location updated from GeolocateControl:', location);
+		if (location && stations.length > 0) {
+			// Update user location state
+			userLocation = {
 				latitude: location.lat,
 				longitude: location.lng
 			};
 			
-			// Find nearest station and update selection if no manual selection
-			if (stations.length > 0 && !isManualSelection) {
-				const nearest = findNearestStation(newUserLocation, stations);
-				if (nearest) {
-					console.log('Found nearest station to user location:', nearest.name);
-					nearestStation = nearest;
-					selectedStation = nearest;
-					// currentReading and locationMessage will be updated automatically via derived/effect values
-				}
+			// Always find nearest station when user location updates
+			const nearest = findNearestStation(userLocation, stations);
+			if (nearest) {
+				console.log('GeolocateControl: Found nearest station:', nearest.name);
+				nearestStation = nearest;
+				
+				// Auto-select nearest station and clear city filter for focused view
+				selectedStation = nearest;
+				selectedCity = ''; // Clear city filter to show focused station view
+				isManualSelection = false; // Mark as automatic selection
+				
+				console.log(`GeolocateControl: Auto-selected nearest station ${nearest.name} in ${nearest.city}`);
 			}
 		}
 	}
