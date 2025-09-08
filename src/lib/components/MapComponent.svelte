@@ -5,9 +5,9 @@
 		CircleLayer,
 		Marker,
 		Popup,
-		QueryRenderedFeatures,
 		GeolocateControl
 	} from 'svelte-maplibre-gl';
+	import { untrack } from 'svelte';
 	import maplibregl from 'maplibre-gl';
 	import type { Map, MapGeoJSONFeature } from 'maplibre-gl';
 	import type { AirQualityReading, Station } from '$lib/types.js';
@@ -34,32 +34,17 @@
 		onUserLocationChange = () => {}
 	}: Props = $props();
 
-	// Debug logging
-	$effect(() => {
-		console.log('MapComponent props updated:', {
-			stationsCount: stations.length,
-			readingsCount: latestReadings.length,
-			stations: stations.slice(0, 3),
-			readings: latestReadings.slice(0, 3)
-		});
-		
-		// Log the first station in detail
-		if (stations.length > 0) {
-			console.log('First station details:', stations[0]);
-			console.log('Station has lat/lon?', 'lat' in stations[0], 'lon' in stations[0]);
-			console.log('Station latitude/longitude:', stations[0].latitude, stations[0].longitude);
-		}
-	});
+	// Debug logging (disabled to prevent excessive rendering)
+	// $effect(() => {
+	// 	console.log('MapComponent props updated:', {
+	// 		stationsCount: stations.length,
+	// 		readingsCount: latestReadings.length,
+	// 	});
+	// });
 
 	let map = $state<Map | undefined>();
 	let mapContainer: HTMLDivElement;
-	let renderedFeatures = $state<MapGeoJSONFeature[]>([]);
 	let isMapReady = $state(false);
-	let mapBoundsUpdateTrigger = $state(0);
-	let center = $state<[number, number]>([30, -5]);
-	let zoom = $state(4);
-	let pitch = $state(0);
-	let bearing = $state(0);
 	let userLocation = $state<{lng: number, lat: number} | null>(null);
 
 	// Export methods for parent component
@@ -86,14 +71,22 @@
 	}
 
 	export function flyToCity(cityName: string) {
-		if (!map) return;
+		console.log('flyToCity called for:', cityName);
+		if (!map) {
+			console.log('Map not available for city fly-to');
+			return;
+		}
 		
 		const cityInfo = CITY_INFO[cityName];
-		if (!cityInfo) return;
+		if (!cityInfo) {
+			console.log('No city info found for:', cityName);
+			return;
+		}
 		
 		const cityStations = stations.filter(s => s.city === cityName);
 		
 		if (cityStations.length === 0) {
+			console.log('No stations in city, flying to city center:', cityInfo.center);
 			map.flyTo({
 				center: cityInfo.center,
 				zoom: cityInfo.zoom || 11,
@@ -103,6 +96,7 @@
 				bearing: 0
 			});
 		} else {
+			console.log(`Flying to ${cityStations.length} stations in ${cityName}`);
 			fitToStations(cityStations);
 		}
 	}
@@ -127,151 +121,121 @@
 		});
 	}
 
-	// Create GeoJSON from stations
-	const stationsGeoJSON = $derived.by(() => {
-		console.log('Creating GeoJSON from stations:', stations.length);
-		if (stations.length > 0) {
-			console.log('Sample station for GeoJSON:', stations[0]);
-		}
-		const geojson = {
-			type: 'FeatureCollection' as const,
-			features: stations.map(station => {
-				const reading = latestReadings.find(r => r.station_id === station.id);
-				const feature = {
-					type: 'Feature' as const,
-					id: station.id,
-					geometry: {
-						type: 'Point' as const,
-						coordinates: [station.longitude, station.latitude]
-					},
-					properties: {
-						...station,
-						station_id: station.id,
-						station_name: station.name,
-						aqi: reading?.overall_aqi || 0,
-						rating: reading?.overall_rating || 'good',
-						pm2_5: reading?.pm2_5 || 0,
-						pm10: reading?.pm10 || 0,
-						o3: reading?.o3 || 0,
-						no2: reading?.no2 || 0,
-						so2: reading?.so2 || 0,
-						co: reading?.co || 0,
-						color: reading ? getAQIColor(reading.overall_rating) : '#6b7280',
-						emoji: reading ? getAQIEmoji(reading.overall_rating) : '😐',
-						hasReading: !!reading
-					}
-				};
-				
-				// Log first feature for debugging
-				if (station.id === stations[0]?.id) {
-					console.log('First GeoJSON feature:', feature);
+	// Create GeoJSON from stations - use stable derivation to prevent excessive updates
+	const stationsGeoJSON = $derived({
+		type: 'FeatureCollection' as const,
+		features: stations.map(station => {
+			const reading = latestReadings.find(r => r.station_id === station.id);
+			return {
+				type: 'Feature' as const,
+				id: station.id,
+				geometry: {
+					type: 'Point' as const,
+					coordinates: [station.longitude, station.latitude]
+				},
+				properties: {
+					...station,
+					station_id: station.id,
+					station_name: station.name,
+					aqi: reading?.overall_aqi || 0,
+					rating: reading?.overall_rating || 'good',
+					pm2_5: reading?.pm2_5 || 0,
+					pm10: reading?.pm10 || 0,
+					o3: reading?.o3 || 0,
+					no2: reading?.no2 || 0,
+					so2: reading?.so2 || 0,
+					co: reading?.co || 0,
+					color: reading ? getAQIColor(reading.overall_rating) : '#6b7280',
+					emoji: reading ? getAQIEmoji(reading.overall_rating) : '😐',
+					hasReading: !!reading
 				}
-				
-				return feature;
+			};
 		})
-		};
-		console.log('GeoJSON created:', geojson);
-		return geojson;
 	});
 
-	// Compute visible stations based on map bounds
+	// Track map bounds changes manually (not reactive)
+	let mapBoundsChanged = $state(0);
+	
+	// Compute visible stations using proper $derived with enhanced bbox filtering
 	const visibleStations = $derived.by(() => {
-		// Force recalculation when bounds change
-		mapBoundsUpdateTrigger;
+		// Force recalculation when map bounds or stations change
+		mapBoundsChanged;
 		
 		if (!map || stations.length === 0) {
-			console.log('No map or stations, showing all:', stations.length);
 			return stations;
 		}
 		
 		try {
 			const bounds = map.getBounds();
-			const sw = bounds.getSouthWest();
-			const ne = bounds.getNorthEast();
 			
-			console.log('Map bounds:', {
-				southwest: [sw.lng, sw.lat],
-				northeast: [ne.lng, ne.lat],
-				center: center,
-				zoom: zoom
+			// Get visible stations by checking if they're within the viewport
+			const stationsInView = stations.filter(station => {
+				return bounds.contains([station.longitude, station.latitude]);
 			});
 			
-			const visible = stations.filter(station => {
-				const lat = station.latitude;
-				const lng = station.longitude;
-				const inBounds = bounds.contains([lng, lat]);
-				
-				// Log first few stations for debugging
-				if (stations.indexOf(station) < 3) {
-					console.log(`Station ${station.id} (${lng}, ${lat}): ${inBounds ? 'IN' : 'OUT'} bounds`);
-				}
-				
-				return inBounds;
-			});
-			
-			console.log(`Visible stations: ${visible.length}/${stations.length} in current bounds`);
-			console.log('Visible station IDs:', visible.map(s => s.id));
-			
-			return visible;
+			console.log(`Bbox filtering: ${stationsInView.length}/${stations.length} stations visible in current viewport`);
+			return stationsInView;
 		} catch (error) {
-			console.log('Error getting map bounds, showing all stations:', error);
+			console.warn('Error calculating visible stations:', error);
 			return stations;
 		}
 	});
 
-	// Notify parent when visible stations change
+	// Track last notified stations outside of reactive context
+	let lastNotifiedIds = '';
+	
+	// Properly notify parent when visible stations change
 	$effect(() => {
-		if (isMapReady && visibleStations) {
-			onVisibleStationsChange(visibleStations);
+		if (isMapReady && onVisibleStationsChange && visibleStations) {
+			const currentIds = visibleStations.map(s => s.id).sort().join(',');
+			
+			if (currentIds !== lastNotifiedIds) {
+				// Update tracking outside the reactive system
+				untrack(() => {
+					lastNotifiedIds = currentIds;
+					onVisibleStationsChange(visibleStations);
+				});
+			}
 		}
 	});
 
-	// Auto-fly to selected station
+	// Manual function to trigger bounds recalculation
+	function updateVisibleStations() {
+		mapBoundsChanged++;
+	}
+
+	// Watch for selectedStation changes and fly to them
+	let previousSelectedStation: Station | null = null;
 	$effect(() => {
-		if (map && selectedStation) {
+		if (map && selectedStation && selectedStation !== previousSelectedStation) {
+			console.log('Selected station changed, flying to:', selectedStation.name);
 			flyToStation(selectedStation);
-		}
-	});
-
-	// Auto-fly to selected city when no station is selected
-	$effect(() => {
-		if (map && selectedCity && !selectedStation) {
-			flyToCity(selectedCity);
+			previousSelectedStation = selectedStation;
 		}
 	});
 
 	function handleMapLoad(event: any) {
+		// Prevent multiple initializations
+		if (map && isMapReady) {
+			console.log('Map already loaded, skipping initialization');
+			return;
+		}
+		
 		map = event.detail;
 		isMapReady = true;
 		console.log('Map loaded, isMapReady:', isMapReady, 'stations:', stations.length);
 		
-		// Add comprehensive map event listeners
-		map.on('movestart', () => console.log('Map movestart'));
-		map.on('move', () => console.log('Map move'));
-		map.on('moveend', () => {
-			mapBoundsUpdateTrigger++;
-			console.log('Map moveend - updating visible stations, trigger:', mapBoundsUpdateTrigger);
-		});
+		// Add map event listeners to update visible stations
+		if (map) {
+			map.on('moveend', updateVisibleStations);
+			map.on('zoomend', updateVisibleStations);
+			map.on('dragend', updateVisibleStations);
+		}
 		
-		map.on('zoomstart', () => console.log('Map zoomstart'));
-		map.on('zoom', () => console.log('Map zoom'));
-		map.on('zoomend', () => {
-			mapBoundsUpdateTrigger++;
-			console.log('Map zoomend - updating visible stations, trigger:', mapBoundsUpdateTrigger);
-		});
+		// Initial update
+		updateVisibleStations();
 		
-		map.on('dragend', () => {
-			mapBoundsUpdateTrigger++;
-			console.log('Map dragend - updating visible stations');
-		});
-		
-		// Initial bounds update after a delay
-		setTimeout(() => {
-			mapBoundsUpdateTrigger++;
-			console.log('Initial bounds update trigger:', mapBoundsUpdateTrigger);
-		}, 500);
-		
-		// Fit to all stations initially
+		// Fit to all stations initially with delay to ensure map is ready
 		if (stations.length > 0) {
 			console.log('Fitting to stations on load:', stations.length);
 			setTimeout(() => fitToStations(), 1000);
@@ -313,10 +277,10 @@
 			onUserLocationChange(userLocation);
 		}
 		
-		// Trigger a bounds update to potentially find nearest stations
-		setTimeout(() => {
-			mapBoundsUpdateTrigger++;
-		}, 100);
+		// Trigger a bounds update to potentially find nearest stations (disabled to prevent loops)
+		// setTimeout(() => {
+		// 	mapBoundsUpdateTrigger++;
+		// }, 100);
 	}
 
 	function handleTrackUserLocationStart() {
@@ -331,8 +295,7 @@
 <div bind:this={mapContainer} class="h-full w-full relative">
 	<!-- Debug info -->
 	<div class="absolute top-2 left-2 z-10 bg-black/70 text-white text-xs p-2 rounded">
-		<div>Center: {center[1].toFixed(3)}, {center[0].toFixed(3)}</div>
-		<div>Zoom: {zoom.toFixed(1)} | Stations: {stations.length}</div>
+		<div>Stations: {stations.length}</div>
 		<div>Visible: {visibleStations.length} | Map: {map ? 'Ready' : 'Loading'}</div>
 		{#if userLocation}
 			<div>User: {userLocation.lat.toFixed(3)}, {userLocation.lng.toFixed(3)}</div>
@@ -344,54 +307,11 @@
 		style="https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
 		class="h-full w-full"
 		bind:map
-		bind:zoom
-		bind:center
-		bind:pitch
-		bind:bearing
 		maxPitch={85}
 		attributionControl={false}
-		on:load={handleMapLoad}
+		onload={handleMapLoad}
 	>
-		{console.log('MapLibre component rendering:', {
-			isMapReady, 
-			stationsCount: stations.length, 
-			center, 
-			zoom, 
-			mapAvailable: !!map
-		})}
-		
-		<!-- Render markers for all stations (outside isMapReady check) -->
-		{#each stations as station (station.id)}
-			{@const reading = latestReadings.find(r => r.station_id === station.id)}
-			{#if reading}
-				<!-- Log marker rendering -->
-				{console.log('Rendering marker for station:', station.id, station.latitude, station.longitude)}
-				{@const statusEmoji = getAQIEmoji(reading.overall_rating)}
-				<Marker lnglat={[station.longitude, station.latitude]} draggable={false}>
-					{#snippet content()}
-						<div 
-							class="text-center leading-none cursor-pointer transform hover:scale-110 transition-all duration-200 {selectedStation?.id === station.id ? 'scale-125 ring-4 ring-blue-400 ring-opacity-50 rounded-full' : ''}"
-							onclick={() => handleStationClick(station)}
-							onkeydown={(e) => e.key === 'Enter' && handleStationClick(station)}
-							tabindex="0"
-							role="button"
-							aria-label="Select {station.name} station"
-						>
-							<div class="text-4xl animate-bounce drop-shadow-lg filter hover:brightness-110">
-								{statusEmoji}
-							</div>
-							<div class="text-xs font-bold text-white drop-shadow-lg bg-black/70 px-2 py-1 rounded-full mt-1">
-								{station.name.replace('Station', '').trim()}
-							</div>
-							<div 
-								class="w-3 h-3 rounded-full border-2 border-white mx-auto mt-1 pulse-glow {selectedStation?.id === station.id ? 'w-4 h-4' : ''}"
-								style="background-color: {getAQIColor(reading.overall_rating)}"
-							></div>
-						</div>
-					{/snippet}
-				</Marker>
-			{/if}
-		{/each}
+		<!-- Markers will be rendered inside isMapReady block to avoid duplication -->
 		
 		{#if isMapReady}
 			<!-- Geolocation Control -->
@@ -407,7 +327,7 @@
 				ontrackuserlocationend={handleTrackUserLocationEnd}
 			/>
 
-			<!-- GeoJSON source with all stations -->
+			<!-- GeoJSON source with all stations (removed QueryRenderedFeatures to prevent loops) -->
 			<GeoJSONSource
 				id="stations"
 				data={stationsGeoJSON}
@@ -419,18 +339,13 @@
 						'circle-radius': 0,
 						'circle-opacity': 0
 					}}
-				>
-					<!-- Query rendered features to get what's visible in viewport -->
-					<QueryRenderedFeatures bind:features={renderedFeatures} />
-				</CircleLayer>
+				/>
 			</GeoJSONSource>
 
 			<!-- Render markers for all stations -->
 			{#each stations as station (station.id)}
 				{@const reading = latestReadings.find(r => r.station_id === station.id)}
 				{#if reading}
-					<!-- Log marker rendering -->
-					{console.log('Rendering marker for station:', station.id, station.latitude, station.longitude)}
 					{@const statusEmoji = getAQIEmoji(reading.overall_rating)}
 					<Marker lnglat={[station.longitude, station.latitude]} draggable={false}>
 						{#snippet content()}

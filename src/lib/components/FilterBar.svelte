@@ -4,29 +4,48 @@
 	import { CITY_INFO } from '$lib/types';
 	import { getAQIEmoji } from '$lib/dataUtils';
 	
-	export let stations: Station[] = [];
-	export let latestReadings: AirQualityReading[] = [];
-	export let selectedCity: string = '';
-	export let selectedStation: Station | null = null;
-	export let selectedDateRange: string = 'now';
-	export let startDate: string = '';
-	export let endDate: string = '';
-	export let filterMetadata = {
-		availableCities: [] as string[],
-		availableStations: [] as string[],
-		dateRange: { min: new Date(), max: new Date() },
-		totalRecords: 0,
-		filtersApplied: [] as string[]
-	};
+	interface Props {
+		stations?: Station[];
+		latestReadings?: AirQualityReading[];
+		selectedCity?: string;
+		selectedStation?: Station | null;
+		selectedDateRange?: string;
+		startDate?: string;
+		endDate?: string;
+		filterMetadata?: {
+			availableCities: string[];
+			availableStations: string[];
+			dateRange: { min: Date; max: Date };
+			totalRecords: number;
+			filtersApplied: string[];
+		};
+	}
+
+	let { 
+		stations = [],
+		latestReadings = [],
+		selectedCity = $bindable(''),
+		selectedStation = $bindable(null),
+		selectedDateRange = $bindable('now'),
+		startDate = $bindable(''),
+		endDate = $bindable(''),
+		filterMetadata = {
+			availableCities: [] as string[],
+			availableStations: [] as string[],
+			dateRange: { min: new Date(), max: new Date() },
+			totalRecords: 0,
+			filtersApplied: [] as string[]
+		}
+	}: Props = $props();
 	
 	const dispatch = createEventDispatcher();
 	
-	let showCityDropdown = false;
-	let showStationDropdown = false;
-	let showDateDropdown = false;
+	let showCityDropdown = $state(false);
+	let showStationDropdown = $state(false);
+	let showDateDropdown = $state(false);
 	
 	// Always show all cities from the original stations data (no cross-filtering)
-	$: cities = [...new Set(stations.map(s => s.city))].map(city => {
+	const cities = $derived([...new Set(stations.map(s => s.city))].map(city => {
 		const stationCount = stations.filter(s => s.city === city).length;
 		const availableStationCount = filterMetadata.availableStations.length > 0 
 			? stations.filter(s => s.city === city && filterMetadata.availableStations.includes(s.id)).length 
@@ -41,10 +60,10 @@
 			isAvailable: true, // Always show all cities
 			hasData: availableStationCount > 0
 		};
-	}).sort((a, b) => a.name.localeCompare(b.name));
+	}).sort((a, b) => a.name.localeCompare(b.name)));
 	
 	// Filter stations by selected city
-	$: filteredStations = (selectedCity ? stations.filter(s => s.city === selectedCity) : stations)
+	const filteredStations = $derived((selectedCity ? stations.filter(s => s.city === selectedCity) : stations)
 		.map(station => {
 			const isAvailable = filterMetadata.availableStations.length === 0 || filterMetadata.availableStations.includes(station.id);
 			return {
@@ -59,7 +78,7 @@
 				return a.isAvailable ? -1 : 1;
 			}
 			return a.name.localeCompare(b.name);
-		});
+		}));
 	
 	// Date range options
 	const dateRangeOptions = [
@@ -120,7 +139,7 @@
 	}
 </script>
 
-<svelte:window on:click={handleClickOutside} />
+<svelte:window onclick={handleClickOutside} />
 
 <div class="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
 	<div class="container mx-auto px-3 py-2 sm:px-4 sm:py-4">
@@ -146,7 +165,7 @@
 						</div>
 						<button
 							class="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded transition-colors flex-shrink-0"
-							on:click={() => dispatch('clearAllFilters')}
+							onclick={() => dispatch('clearAllFilters')}
 						>
 							<span class="sm:hidden">✕</span><span class="hidden sm:inline">Clear</span>
 						</button>
@@ -161,7 +180,7 @@
 			<div class="dropdown-container relative">
 				<button 
 					class="flex-1 sm:w-auto flex items-center justify-between px-2 sm:px-4 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-lg transition-colors duration-200 sm:min-w-[200px] text-xs sm:text-sm"
-					on:click={() => showCityDropdown = !showCityDropdown}
+					onclick={() => showCityDropdown = !showCityDropdown}
 				>
 					<div class="flex items-center space-x-2">
 						<span class="text-sm sm:text-lg">
@@ -187,7 +206,7 @@
 							{#each cities as city}
 								<button 
 									class="w-full text-left px-3 py-2 rounded-md transition-colors duration-150 {selectedCity === city.id ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50'}"
-									on:click={() => selectCity(city.id)}
+									onclick={() => selectCity(city.id)}
 								>
 									<div class="flex items-center justify-between">
 										<div class="flex items-center space-x-3">
@@ -216,7 +235,7 @@
 			<div class="dropdown-container relative">
 				<button 
 					class="flex-1 sm:w-auto flex items-center justify-between px-2 sm:px-4 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-lg transition-colors duration-200 sm:min-w-[250px] text-xs sm:text-sm"
-					on:click={() => showStationDropdown = !showStationDropdown}
+					onclick={() => showStationDropdown = !showStationDropdown}
 				>
 					<div class="flex items-center space-x-2">
 						{#if selectedStation}
@@ -252,7 +271,7 @@
 								{@const reading = getStationReading(station)}
 								<button 
 									class="w-full text-left px-3 py-2 rounded-md transition-colors duration-150 {selectedStation?.id === station.id ? 'bg-blue-50 text-blue-700' : station.isAvailable ? 'hover:bg-gray-50' : 'opacity-50 cursor-not-allowed bg-gray-25'}"
-									on:click={() => station.isAvailable && selectStation(station)}
+									onclick={() => station.isAvailable && selectStation(station)}
 									disabled={!station.isAvailable}
 								>
 									<div class="flex items-center justify-between">
@@ -294,7 +313,7 @@
 			<div class="dropdown-container relative">
 				<button 
 					class="flex-1 sm:w-auto flex items-center justify-between px-2 sm:px-4 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-lg transition-colors duration-200 sm:min-w-[200px] text-xs sm:text-sm"
-					on:click={() => showDateDropdown = !showDateDropdown}
+					onclick={() => showDateDropdown = !showDateDropdown}
 				>
 					<div class="flex items-center space-x-2">
 						<span class="text-sm sm:text-lg">
@@ -330,7 +349,7 @@
 							{#each dateRangeOptions as option}
 								<button 
 									class="w-full text-left px-3 py-2 hover:bg-gray-50 rounded-md transition-colors duration-150 {selectedDateRange === option.id ? 'bg-blue-50 text-blue-700' : ''}"
-									on:click={() => selectDateRange(option.id)}
+									onclick={() => selectDateRange(option.id)}
 								>
 									<div class="flex items-center space-x-3">
 										<span class="text-lg">{option.label.split(' ')[0]}</span>
@@ -355,7 +374,7 @@
 									min={filterMetadata?.dateRange?.min ? new Date(filterMetadata.dateRange.min).toISOString().split('T')[0] : ''}
 										max={filterMetadata?.dateRange?.max ? new Date(filterMetadata.dateRange.max).toISOString().split('T')[0] : ''}
 									class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-									on:change={() => dispatch('customDateChange', { startDate, endDate })}
+									onchange={() => dispatch('customDateChange', { startDate, endDate })}
 								/>
 								{#if filterMetadata?.dateRange}
 									<div class="text-xs text-gray-500 mt-1">
@@ -372,7 +391,7 @@
 									min={filterMetadata?.dateRange?.min ? new Date(filterMetadata.dateRange.min).toISOString().split('T')[0] : ''}
 										max={filterMetadata?.dateRange?.max ? new Date(filterMetadata.dateRange.max).toISOString().split('T')[0] : ''}
 									class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-									on:change={() => dispatch('customDateChange', { startDate, endDate })}
+									onchange={() => dispatch('customDateChange', { startDate, endDate })}
 								/>
 							</div>
 								</div>
@@ -386,7 +405,7 @@
 			{#if selectedCity || selectedStation || selectedDateRange !== 'now'}
 				<button 
 					class="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors duration-200 flex items-center space-x-2"
-					on:click={() => {
+					onclick={() => {
 						selectedCity = '';
 						selectedStation = null;
 						selectedDateRange = 'now';

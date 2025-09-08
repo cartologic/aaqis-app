@@ -13,9 +13,9 @@ export default defineConfig({
 		}
 	},
 	build: {
-		minify: 'esbuild',
-		esbuildOptions: {
-			drop: ['console', 'debugger']
-		}
+		minify: 'esbuild'
+	},
+	esbuild: {
+		drop: ['console', 'debugger']
 	}
 });

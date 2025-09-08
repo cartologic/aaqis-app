@@ -339,20 +339,24 @@
 		selectedStation = station;
 		isManualSelection = true;
 		
-		// Fly to station on map
-		if (mapComponent) {
-			console.log('Calling mapComponent.flyToStation');
-			mapComponent.flyToStation(station);
-		} else {
-			console.log('mapComponent not available');
-		}
+		// Fly to station on map (disabled to prevent loops)
+		// if (mapComponent) {
+		// 	console.log('Calling mapComponent.flyToStation');
+		// 	mapComponent.flyToStation(station);
+		// } else {
+		// 	console.log('mapComponent not available');
+		// }
 	}
 	
 	// Handle visible stations change from map
 	function handleVisibleStationsChange(newVisibleStations: Station[]) {
-		console.log('handleVisibleStationsChange called with:', newVisibleStations.length, 'stations');
-		visibleStations = newVisibleStations;
-		console.log('visibleStations updated to:', visibleStations.length);
+		// Avoid unnecessary updates if stations are the same
+		const currentIds = visibleStations.map(s => s.id).sort().join(',');
+		const newIds = newVisibleStations.map(s => s.id).sort().join(',');
+		
+		if (currentIds !== newIds) {
+			visibleStations = newVisibleStations;
+		}
 	}
 	
 	// Handle user location change from map geolocation
