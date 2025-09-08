@@ -34,6 +34,7 @@
 	let calendarSelectedYear: number = new Date().getFullYear();
 	let calendarSelectedPollutant = 'overall_aqi';
 	let headerBackgroundStyle = 'background: linear-gradient(135deg, #2563eb 0%, #16a34a 50%, #2563eb 100%)'; // Default gradient
+	let visibleStations: Station[] = [];
 	let filterMetadata = {
 		availableCities: [] as string[],
 		availableStations: [] as string[],
@@ -44,32 +45,45 @@
 
 	onMount(async () => {
 		// Load location first
+		console.log('Starting onMount...');
 		userLocation = await getUserLocation();
 		
 		// Load air quality data
-		allData = await loadAirQualityData();
-		console.log(`Loaded ${allData.length} total records from Parquet file`);
-		
-		// Log date range of loaded data
-		if (allData.length > 0) {
-			const dates = allData.map(r => new Date(r.datetime)).sort((a, b) => a.getTime() - b.getTime());
-			console.log('Data date range:', {
-				first: dates[0].toISOString(),
-				last: dates[dates.length - 1].toISOString(),
-				years: [...new Set(dates.map(d => d.getFullYear()))]
-			});
+		try {
+			allData = await loadAirQualityData();
+			console.log(`Loaded ${allData.length} total records from Parquet file`);
+			
+			// Log date range of loaded data
+			if (allData.length > 0) {
+				const dates = allData.map(r => new Date(r.datetime)).sort((a, b) => a.getTime() - b.getTime());
+				console.log('Data date range:', {
+					first: dates[0].toISOString(),
+					last: dates[dates.length - 1].toISOString(),
+					years: [...new Set(dates.map(d => d.getFullYear()))]
+				});
+			}
+		} catch (error) {
+			console.error('Error loading parquet data:', error);
 		}
 		
 		// If no data loaded, create sample data for testing
 		if (allData.length === 0) {
 			console.warn('No data loaded from Parquet file, using sample data');
 			allData = createSampleData();
+			console.log('Created sample data:', allData.length, 'records');
 		}
 		
 		const currentData = getDataUpToCurrentTime(allData);
+		console.log('Current data after time filter:', currentData.length);
+		
 		stations = getStationsFromData(currentData);
+		console.log('Stations extracted:', stations.length, stations);
+		
 		latestReadings = getLatestReadings(currentData);
+		console.log('Latest readings:', latestReadings.length, latestReadings.slice(0, 3));
+		
 		filteredData = currentData;
+		visibleStations = stations; // Initialize with all stations
 		
 		// Find nearest station and get reading
 		if (userLocation && stations.length > 0) {
@@ -321,19 +335,31 @@
 	
 	// Station selection handler
 	function selectStation(station: Station) {
+		console.log('selectStation called:', station.id, station.name);
 		selectedStation = station;
 		isManualSelection = true;
 		
 		// Fly to station on map
 		if (mapComponent) {
+			console.log('Calling mapComponent.flyToStation');
 			mapComponent.flyToStation(station);
+		} else {
+			console.log('mapComponent not available');
 		}
+	}
+	
+	// Handle visible stations change from map
+	function handleVisibleStationsChange(newVisibleStations: Station[]) {
+		visibleStations = newVisibleStations;
 	}
 	
 	// Filter event handlers
 	function handleCityChange(event: CustomEvent<string>) {
 		selectedCity = event.detail;
-		// City selection is now just for reference, don't reset station
+		// Fly to city when selected
+		if (mapComponent && selectedCity) {
+			mapComponent.flyToCity(selectedCity);
+		}
 	}
 	
 	function handleStationSelect(event: CustomEvent<Station | null>) {
@@ -467,10 +493,10 @@
 		}).sort((a, b) => b.aqi - a.aqi);
 	}
 	
-	function getStationsByCity() {
+	function getStationsByCity(stationsToGroup: Station[] = stations) {
 		const cityGroups: Record<string, {station: Station, reading: AirQualityReading}[]> = {};
 		
-		stations.forEach(station => {
+		stationsToGroup.forEach(station => {
 			const reading = latestReadings.find(r => r.station_id === station.id);
 			if (reading) {
 				if (!cityGroups[station.city]) {
@@ -495,10 +521,14 @@
 	}
 	
 	function createSampleData(): AirQualityReading[] {
+		const now = new Date();
+		const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+		const twoDaysAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+		
 		return [
 			{
 				station_id: 'AA001',
-				datetime: '2024-06-15 12:00:00',
+				datetime: yesterday.toISOString(),
 				city: 'addis_ababa',
 				station_name: 'Bole Station',
 				latitude: 9.0227,
@@ -526,7 +556,7 @@
 			},
 			{
 				station_id: 'KA001',
-				datetime: '2024-06-15 12:00:00',
+				datetime: twoDaysAgo.toISOString(),
 				city: 'kampala',
 				station_name: 'Central Station',
 				latitude: 0.3177,
@@ -825,7 +855,9 @@
 									{stations} 
 									{latestReadings} 
 									selectedStation={activeStation}
+									{selectedCity}
 									onStationSelect={selectStation}
+									onVisibleStationsChange={handleVisibleStationsChange}
 								/>
 							</div>
 						</div>
@@ -838,18 +870,18 @@
 								🌆 Monitoring Stations
 							</h3>
 							<div class="text-xs text-gray-600">
-								Click any station to view its data
+								{visibleStations.length > 0 ? `${visibleStations.length} stations in view` : 'Pan map to see stations'}
 							</div>
 						</div>
 						
 						<div class="flex-grow overflow-hidden bg-white rounded-xl shadow-lg">
 							<div class="h-full overflow-y-auto p-4">
-								{#if latestReadings.length === 0}
-									<div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
-										<p class="text-yellow-800">⚠️ No air quality data available</p>
+								{#if visibleStations.length === 0}
+									<div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+										<p class="text-blue-800">📍 Zoom in or pan the map to see stations in that area</p>
 									</div>
 								{:else}
-									{#each getStationsByCity() as cityGroup}
+									{#each getStationsByCity(visibleStations) as cityGroup}
 										<div class="mb-4">
 											<h4 class="text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
 												<span>{cityGroup.emoji}</span>

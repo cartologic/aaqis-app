@@ -29,8 +29,23 @@ export async function loadAirQualityData(): Promise<AirQualityReading[]> {
 		console.log('Parquet data parsing completed, records:', result.length);
 		return result;
 	} catch (error) {
-		console.error('Failed to load air quality data:', error);
-		return [];
+		console.error('Failed to load Parquet data, trying CSV fallback:', error);
+		
+		// Fallback to CSV
+		try {
+			const response = await fetch(`${base}/data/african_cities_air_quality_2024_2026.csv`);
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`);
+			}
+			const csvText = await response.text();
+			console.log('CSV file loaded, size:', csvText.length);
+			const data = parseCSV(csvText);
+			console.log('CSV parsed, records:', data.length);
+			return data;
+		} catch (csvError) {
+			console.error('Failed to load CSV data:', csvError);
+			return [];
+		}
 	}
 }
 
@@ -356,6 +371,7 @@ export function getDataUpToCurrentTime(data: AirQualityReading[]): AirQualityRea
 		acc[year] = (acc[year] || 0) + 1;
 		return acc;
 	}, {} as Record<number, number>);
+	
 	console.log('Year distribution after current time filter:', yearCounts);
 	
 	return filteredData;
