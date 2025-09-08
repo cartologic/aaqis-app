@@ -13,6 +13,7 @@
 	import type { AirQualityReading, Station } from '$lib/types.js';
 	import { getAQIColor, getAQIDescription, CITY_INFO } from '$lib/types.js';
 	import { getAQIEmoji } from '$lib/dataUtils.js';
+	import { aaqisAnalytics } from '$lib/analytics';
 
 	interface Props {
 		stations?: Station[];
@@ -193,6 +194,10 @@
 				// Update tracking outside the reactive system
 				untrack(() => {
 					lastNotifiedIds = currentIds;
+					
+					// Track bbox filtering analytics
+					aaqisAnalytics.trackBboxFilter(visibleStations.length, stations.length);
+					
 					onVisibleStationsChange(visibleStations);
 				});
 			}
@@ -266,6 +271,11 @@
 
 	function handleStationClick(station: Station) {
 		console.log('Station clicked:', station.id, station.name);
+		
+		// Track map marker click
+		aaqisAnalytics.trackMapInteraction('marker_click');
+		aaqisAnalytics.trackStationSelection(station.id, station.name, station.city, 'map_click');
+		
 		onStationSelect(station);
 		// Auto fly to station when clicked
 		flyToStation(station);

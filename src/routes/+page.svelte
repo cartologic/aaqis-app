@@ -9,6 +9,7 @@
 	import FilterBar from '$lib/components/FilterBar.svelte';
 	import LineChart from '$lib/components/LineChart.svelte';
 	import AirQualityHeatmap from '$lib/components/AirQualityHeatmap.svelte';
+	import { aaqisAnalytics } from '$lib/analytics';
 
 	let allData = $state<AirQualityReading[]>([]);
 	let filteredData = $state<AirQualityReading[]>([]);
@@ -47,10 +48,16 @@
 		console.log('Starting onMount...');
 		userLocation = await getUserLocation();
 		
-		// Load air quality data
+		// Load air quality data with performance tracking
+		const loadStartTime = performance.now();
 		try {
 			allData = await loadAirQualityData();
+			const loadTime = performance.now() - loadStartTime;
+			
 			console.log(`Loaded ${allData.length} total records from Parquet file`);
+			
+			// Track data loading performance
+			aaqisAnalytics.trackDataLoad(allData.length, loadTime);
 			
 			// Log date range of loaded data
 			if (allData.length > 0) {
@@ -63,6 +70,8 @@
 			}
 		} catch (error) {
 			console.error('Error loading parquet data:', error);
+			// Track data loading error
+			aaqisAnalytics.trackCustomEvent('data_load_error', { error: error.message });
 		}
 		
 		// If no data loaded, create sample data for testing
@@ -315,12 +324,23 @@
 				currentReading.overall_rating,
 				selectedStakeholder
 			);
+			
+			// Track health advice view analytics
+			aaqisAnalytics.trackHealthAdviceView(
+				currentReading.overall_aqi,
+				currentReading.overall_rating,
+				selectedStakeholder
+			);
 		}
 	});
 	
 	// Station selection handler
-	function selectStation(station: Station) {
+	function selectStation(station: Station, method: 'map_click' | 'list_click' | 'search' | 'geolocation' = 'list_click') {
 		console.log('selectStation called:', station.id, station.name);
+		
+		// Track station selection analytics
+		aaqisAnalytics.trackStationSelection(station.id, station.name, station.city, method);
+		
 		selectedStation = station;
 		isManualSelection = true;
 		
@@ -332,6 +352,25 @@
 		// 	console.log('mapComponent not available');
 		// }
 	}
+
+	// Track chart views when components are rendered
+	$effect(() => {
+		if (selectedStation && filteredData.length > 0) {
+			// Track heatmap view
+			aaqisAnalytics.trackChartView('heatmap', calendarSelectedPollutant, calendarSelectedYear.toString());
+			
+			// Track line chart view
+			aaqisAnalytics.trackChartView('line', selectedPollutant, selectedDateRange);
+			
+			// Track gauge view with current reading
+			if (currentReading) {
+				aaqisAnalytics.trackChartView('gauge', 'overall_aqi', 'current');
+				
+				// Track pollutant viewing
+				aaqisAnalytics.trackPollutantView('overall_aqi', currentReading.overall_aqi, currentReading.overall_rating);
+			}
+		}
+	});
 	
 	// Handle visible stations change from map
 	function handleVisibleStationsChange(newVisibleStations: Station[]) {
@@ -352,6 +391,10 @@
 	// Handle user location change from map geolocation
 	function handleUserLocationChange(location: {lng: number, lat: number} | null) {
 		console.log('User location updated from GeolocateControl:', location);
+		
+		// Track geolocation usage
+		aaqisAnalytics.trackMapInteraction('geolocation_use');
+		
 		if (location && stations.length > 0) {
 			// Update user location state
 			userLocation = {
@@ -370,6 +413,9 @@
 				selectedCity = ''; // Clear city filter to show focused station view
 				isManualSelection = false; // Mark as automatic selection
 				
+				// Track automatic station selection via geolocation
+				aaqisAnalytics.trackStationSelection(nearest.id, nearest.name, nearest.city, 'geolocation');
+				
 				console.log(`GeolocateControl: Auto-selected nearest station ${nearest.name} in ${nearest.city}`);
 			}
 		}
@@ -378,6 +424,11 @@
 	// Filter event handlers
 	function handleCityChange(event: CustomEvent<string>) {
 		selectedCity = event.detail;
+		
+		// Track city filtering analytics
+		const cityStations = stations.filter(s => s.city === selectedCity);
+		aaqisAnalytics.trackCityFilter(selectedCity, cityStations.length);
+		
 		// Clear selected station when city changes
 		selectedStation = null;
 		isManualSelection = false;
@@ -766,7 +817,13 @@
 							<div class="grid grid-cols-2 gap-3">
 								<button 
 									class="p-3 text-left rounded-lg border-2 transition-all duration-200 {selectedStakeholder === 'public' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 hover:border-gray-300'}"
-									onclick={() => selectedStakeholder = 'public'}
+									onclick={() => {
+										const prevStakeholder = selectedStakeholder;
+										selectedStakeholder = 'public';
+										if (prevStakeholder !== 'public') {
+											aaqisAnalytics.trackStakeholderSwitch(prevStakeholder, 'public');
+										}
+									}}
 								>
 									<div class="text-2xl mb-1">👥</div>
 									<div class="font-medium">Public</div>
@@ -774,7 +831,13 @@
 								</button>
 								<button 
 									class="p-3 text-left rounded-lg border-2 transition-all duration-200 {selectedStakeholder === 'government' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 hover:border-gray-300'}"
-									onclick={() => selectedStakeholder = 'government'}
+									onclick={() => {
+										const prevStakeholder = selectedStakeholder;
+										selectedStakeholder = 'government';
+										if (prevStakeholder !== 'government') {
+											aaqisAnalytics.trackStakeholderSwitch(prevStakeholder, 'government');
+										}
+									}}
 								>
 									<div class="text-2xl mb-1">🏢</div>
 									<div class="font-medium">Government</div>
