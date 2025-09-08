@@ -3,7 +3,7 @@
 	import type { Station, AirQualityReading } from '$lib/types';
 	import { CITY_INFO } from '$lib/types';
 	import { getAQIEmoji } from '$lib/dataUtils';
-	
+
 	interface Props {
 		stations?: Station[];
 		latestReadings?: AirQualityReading[];
@@ -21,7 +21,7 @@
 		};
 	}
 
-	let { 
+	let {
 		stations = [],
 		latestReadings = [],
 		selectedCity = $bindable(''),
@@ -37,49 +37,57 @@
 			filtersApplied: [] as string[]
 		}
 	}: Props = $props();
-	
+
 	const dispatch = createEventDispatcher();
-	
+
 	let showCityDropdown = $state(false);
 	let showStationDropdown = $state(false);
 	let showDateDropdown = $state(false);
-	
+
 	// Always show all cities from the original stations data (no cross-filtering)
-	const cities = $derived([...new Set(stations.map(s => s.city))].map(city => {
-		const stationCount = stations.filter(s => s.city === city).length;
-		const availableStationCount = filterMetadata.availableStations.length > 0 
-			? stations.filter(s => s.city === city && filterMetadata.availableStations.includes(s.id)).length 
-			: stationCount;
-		
-		return {
-			id: city,
-			name: CITY_INFO[city]?.displayName || city.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-			emoji: CITY_INFO[city]?.emoji || '🌍',
-			stationCount,
-			availableStationCount,
-			isAvailable: true, // Always show all cities
-			hasData: availableStationCount > 0
-		};
-	}).sort((a, b) => a.name.localeCompare(b.name)));
-	
+	const cities = $derived(
+		[...new Set(stations.map(s => s.city))]
+			.map(city => {
+				const stationCount = stations.filter(s => s.city === city).length;
+				const availableStationCount =
+					filterMetadata.availableStations.length > 0
+						? stations.filter(s => s.city === city && filterMetadata.availableStations.includes(s.id)).length
+						: stationCount;
+
+				return {
+					id: city,
+					name: CITY_INFO[city]?.displayName || city.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+					emoji: CITY_INFO[city]?.emoji || '🌍',
+					stationCount,
+					availableStationCount,
+					isAvailable: true, // Always show all cities
+					hasData: availableStationCount > 0
+				};
+			})
+			.sort((a, b) => a.name.localeCompare(b.name))
+	);
+
 	// Filter stations by selected city
-	const filteredStations = $derived((selectedCity ? stations.filter(s => s.city === selectedCity) : stations)
-		.map(station => {
-			const isAvailable = filterMetadata.availableStations.length === 0 || filterMetadata.availableStations.includes(station.id);
-			return {
-				...station,
-				isAvailable,
-				isFiltered: filterMetadata.filtersApplied.length > 0 && !filterMetadata.filtersApplied.includes('station')
-			};
-		})
-		.sort((a, b) => {
-			// Sort available stations first, then by name
-			if (a.isAvailable !== b.isAvailable) {
-				return a.isAvailable ? -1 : 1;
-			}
-			return a.name.localeCompare(b.name);
-		}));
-	
+	const filteredStations = $derived(
+		(selectedCity ? stations.filter(s => s.city === selectedCity) : stations)
+			.map(station => {
+				const isAvailable =
+					filterMetadata.availableStations.length === 0 || filterMetadata.availableStations.includes(station.id);
+				return {
+					...station,
+					isAvailable,
+					isFiltered: filterMetadata.filtersApplied.length > 0 && !filterMetadata.filtersApplied.includes('station')
+				};
+			})
+			.sort((a, b) => {
+				// Sort available stations first, then by name
+				if (a.isAvailable !== b.isAvailable) {
+					return a.isAvailable ? -1 : 1;
+				}
+				return a.name.localeCompare(b.name);
+			})
+	);
+
 	// Date range options
 	const dateRangeOptions = [
 		{ id: 'now', label: '📊 Real-time (Current)', description: 'Latest available data' },
@@ -88,35 +96,35 @@
 		{ id: 'month', label: '📉 Past Month', description: 'Last 30 days' },
 		{ id: 'custom', label: '🗓️ Custom Range', description: 'Select specific dates' }
 	];
-	
+
 	function selectCity(cityId: string) {
 		selectedCity = cityId;
-		
+
 		// Clear station selection when city changes
 		selectedStation = null;
 		dispatch('stationSelect', null);
-		
+
 		showCityDropdown = false;
 		dispatch('cityChange', cityId);
 	}
-	
+
 	function selectStation(station: Station) {
 		selectedStation = station;
 		selectedCity = station.city;
 		showStationDropdown = false;
 		dispatch('stationSelect', station);
 	}
-	
+
 	function selectDateRange(range: string) {
 		selectedDateRange = range;
 		showDateDropdown = false;
 		dispatch('dateRangeChange', range);
 	}
-	
+
 	function getStationReading(station: Station) {
 		return latestReadings.find(r => r.station_id === station.id);
 	}
-	
+
 	function getAQIColor(aqi: number): string {
 		if (aqi <= 50) return '#22c55e';
 		if (aqi <= 100) return '#eab308';
@@ -125,9 +133,7 @@
 		if (aqi <= 300) return '#a855f7';
 		return '#7f1d1d';
 	}
-	
 
-	
 	// Close dropdowns when clicking outside
 	function handleClickOutside(event: MouseEvent) {
 		const target = event.target as HTMLElement;
@@ -161,7 +167,9 @@
 					</div>
 					<div class="flex items-center justify-between sm:justify-start space-x-1 sm:space-x-3">
 						<div class="text-blue-600 font-medium text-xs sm:text-sm">
-							<span class="hidden sm:inline">📊 </span><span class="hidden sm:inline">{filterMetadata.totalRecords.toLocaleString()} records</span><span class="sm:hidden">{filterMetadata.totalRecords.toLocaleString()}</span>
+							<span class="hidden sm:inline">📊 </span><span class="hidden sm:inline"
+								>{filterMetadata.totalRecords.toLocaleString()} records</span
+							><span class="sm:hidden">{filterMetadata.totalRecords.toLocaleString()}</span>
 						</div>
 						<button
 							class="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded transition-colors flex-shrink-0"
@@ -173,14 +181,13 @@
 				</div>
 			</div>
 		{/if}
-		
+
 		<div class="flex flex-row items-center gap-1 sm:gap-4">
-			
 			<!-- City Selection -->
 			<div class="dropdown-container relative">
-				<button 
+				<button
 					class="flex-1 sm:w-auto flex items-center justify-between px-2 sm:px-4 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-lg transition-colors duration-200 sm:min-w-[200px] text-xs sm:text-sm"
-					onclick={() => showCityDropdown = !showCityDropdown}
+					onclick={() => (showCityDropdown = !showCityDropdown)}
 				>
 					<div class="flex items-center space-x-2">
 						<span class="text-sm sm:text-lg">
@@ -195,17 +202,26 @@
 							</div>
 						</div>
 					</div>
-					<svg class="w-4 h-4 text-gray-500 transition-transform duration-200 {showCityDropdown ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<svg
+						class="w-4 h-4 text-gray-500 transition-transform duration-200 {showCityDropdown ? 'rotate-180' : ''}"
+						fill="none"
+						stroke="currentColor"
+						viewBox="0 0 24 24"
+					>
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
 					</svg>
 				</button>
-				
+
 				{#if showCityDropdown}
-					<div class="absolute top-full left-0 mt-1 w-full lg:w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
+					<div
+						class="absolute top-full left-0 mt-1 w-full lg:w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto"
+					>
 						<div class="p-2">
 							{#each cities as city}
-								<button 
-									class="w-full text-left px-3 py-2 rounded-md transition-colors duration-150 {selectedCity === city.id ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50'}"
+								<button
+									class="w-full text-left px-3 py-2 rounded-md transition-colors duration-150 {selectedCity === city.id
+										? 'bg-blue-50 text-blue-700'
+										: 'hover:bg-gray-50'}"
 									onclick={() => selectCity(city.id)}
 								>
 									<div class="flex items-center justify-between">
@@ -219,7 +235,8 @@
 													{/if}
 												</div>
 												<div class="text-xs text-gray-500">
-													{city.stationCount} {city.stationCount === 1 ? 'station' : 'stations'}
+													{city.stationCount}
+													{city.stationCount === 1 ? 'station' : 'stations'}
 												</div>
 											</div>
 										</div>
@@ -230,12 +247,12 @@
 					</div>
 				{/if}
 			</div>
-			
+
 			<!-- Station Selection -->
 			<div class="dropdown-container relative">
-				<button 
+				<button
 					class="flex-1 sm:w-auto flex items-center justify-between px-2 sm:px-4 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-lg transition-colors duration-200 sm:min-w-[250px] text-xs sm:text-sm"
-					onclick={() => showStationDropdown = !showStationDropdown}
+					onclick={() => (showStationDropdown = !showStationDropdown)}
 				>
 					<div class="flex items-center space-x-2">
 						{#if selectedStation}
@@ -259,18 +276,30 @@
 							</div>
 						{/if}
 					</div>
-					<svg class="w-4 h-4 text-gray-500 transition-transform duration-200 {showStationDropdown ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<svg
+						class="w-4 h-4 text-gray-500 transition-transform duration-200 {showStationDropdown ? 'rotate-180' : ''}"
+						fill="none"
+						stroke="currentColor"
+						viewBox="0 0 24 24"
+					>
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
 					</svg>
 				</button>
-				
+
 				{#if showStationDropdown}
-					<div class="absolute top-full left-0 mt-1 w-full lg:w-96 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
+					<div
+						class="absolute top-full left-0 mt-1 w-full lg:w-96 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto"
+					>
 						<div class="p-2">
 							{#each filteredStations as station}
 								{@const reading = getStationReading(station)}
-								<button 
-									class="w-full text-left px-3 py-2 rounded-md transition-colors duration-150 {selectedStation?.id === station.id ? 'bg-blue-50 text-blue-700' : station.isAvailable ? 'hover:bg-gray-50' : 'opacity-50 cursor-not-allowed bg-gray-25'}"
+								<button
+									class="w-full text-left px-3 py-2 rounded-md transition-colors duration-150 {selectedStation?.id ===
+									station.id
+										? 'bg-blue-50 text-blue-700'
+										: station.isAvailable
+											? 'hover:bg-gray-50'
+											: 'opacity-50 cursor-not-allowed bg-gray-25'}"
 									onclick={() => station.isAvailable && selectStation(station)}
 									disabled={!station.isAvailable}
 								>
@@ -308,12 +337,12 @@
 					</div>
 				{/if}
 			</div>
-			
+
 			<!-- Date Range Selection -->
 			<div class="dropdown-container relative">
-				<button 
+				<button
 					class="flex-1 sm:w-auto flex items-center justify-between px-2 sm:px-4 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-lg transition-colors duration-200 sm:min-w-[200px] text-xs sm:text-sm"
-					onclick={() => showDateDropdown = !showDateDropdown}
+					onclick={() => (showDateDropdown = !showDateDropdown)}
 				>
 					<div class="flex items-center space-x-2">
 						<span class="text-sm sm:text-lg">
@@ -338,17 +367,27 @@
 							</div>
 						</div>
 					</div>
-					<svg class="w-4 h-4 text-gray-500 transition-transform duration-200 {showDateDropdown ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<svg
+						class="w-4 h-4 text-gray-500 transition-transform duration-200 {showDateDropdown ? 'rotate-180' : ''}"
+						fill="none"
+						stroke="currentColor"
+						viewBox="0 0 24 24"
+					>
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
 					</svg>
 				</button>
-				
+
 				{#if showDateDropdown}
-					<div class="absolute top-full left-0 mt-1 w-full lg:w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+					<div
+						class="absolute top-full left-0 mt-1 w-full lg:w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50"
+					>
 						<div class="p-2">
 							{#each dateRangeOptions as option}
-								<button 
-									class="w-full text-left px-3 py-2 hover:bg-gray-50 rounded-md transition-colors duration-150 {selectedDateRange === option.id ? 'bg-blue-50 text-blue-700' : ''}"
+								<button
+									class="w-full text-left px-3 py-2 hover:bg-gray-50 rounded-md transition-colors duration-150 {selectedDateRange ===
+									option.id
+										? 'bg-blue-50 text-blue-700'
+										: ''}"
 									onclick={() => selectDateRange(option.id)}
 								>
 									<div class="flex items-center space-x-3">
@@ -361,49 +400,58 @@
 								</button>
 							{/each}
 						</div>
-						
+
 						{#if selectedDateRange === 'custom'}
 							<div class="border-t border-gray-200 p-3">
 								<div class="space-y-3">
 									<div>
-								<label for="start-date-input" class="block text-xs font-medium text-gray-700 mb-1">Start Date</label>
-								<input 
-									id="start-date-input"
-									type="date" 
-									bind:value={startDate}
-									min={filterMetadata?.dateRange?.min ? new Date(filterMetadata.dateRange.min).toISOString().split('T')[0] : ''}
-										max={filterMetadata?.dateRange?.max ? new Date(filterMetadata.dateRange.max).toISOString().split('T')[0] : ''}
-									class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-									onchange={() => dispatch('customDateChange', { startDate, endDate })}
-								/>
-								{#if filterMetadata?.dateRange}
-									<div class="text-xs text-gray-500 mt-1">
-										Available: {filterMetadata.dateRange.min} to {filterMetadata.dateRange.max}
+										<label for="start-date-input" class="block text-xs font-medium text-gray-700 mb-1">Start Date</label
+										>
+										<input
+											id="start-date-input"
+											type="date"
+											bind:value={startDate}
+											min={filterMetadata?.dateRange?.min
+												? new Date(filterMetadata.dateRange.min).toISOString().split('T')[0]
+												: ''}
+											max={filterMetadata?.dateRange?.max
+												? new Date(filterMetadata.dateRange.max).toISOString().split('T')[0]
+												: ''}
+											class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+											onchange={() => dispatch('customDateChange', { startDate, endDate })}
+										/>
+										{#if filterMetadata?.dateRange}
+											<div class="text-xs text-gray-500 mt-1">
+												Available: {filterMetadata.dateRange.min} to {filterMetadata.dateRange.max}
+											</div>
+										{/if}
 									</div>
-								{/if}
-							</div>
-							<div>
-								<label for="end-date-input" class="block text-xs font-medium text-gray-700 mb-1">End Date</label>
-								<input 
-									id="end-date-input"
-									type="date" 
-									bind:value={endDate}
-									min={filterMetadata?.dateRange?.min ? new Date(filterMetadata.dateRange.min).toISOString().split('T')[0] : ''}
-										max={filterMetadata?.dateRange?.max ? new Date(filterMetadata.dateRange.max).toISOString().split('T')[0] : ''}
-									class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-									onchange={() => dispatch('customDateChange', { startDate, endDate })}
-								/>
-							</div>
+									<div>
+										<label for="end-date-input" class="block text-xs font-medium text-gray-700 mb-1">End Date</label>
+										<input
+											id="end-date-input"
+											type="date"
+											bind:value={endDate}
+											min={filterMetadata?.dateRange?.min
+												? new Date(filterMetadata.dateRange.min).toISOString().split('T')[0]
+												: ''}
+											max={filterMetadata?.dateRange?.max
+												? new Date(filterMetadata.dateRange.max).toISOString().split('T')[0]
+												: ''}
+											class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+											onchange={() => dispatch('customDateChange', { startDate, endDate })}
+										/>
+									</div>
 								</div>
 							</div>
 						{/if}
 					</div>
 				{/if}
 			</div>
-			
+
 			<!-- Clear Filters Button -->
 			{#if selectedCity || selectedStation || selectedDateRange !== 'now'}
-				<button 
+				<button
 					class="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors duration-200 flex items-center space-x-2"
 					onclick={() => {
 						selectedCity = '';
@@ -426,7 +474,7 @@
 	.dropdown-container {
 		position: relative;
 	}
-	
+
 	/* Mobile responsive styles */
 	@media (max-width: 768px) {
 		.dropdown-container button {
@@ -434,22 +482,22 @@
 			font-size: 0.875rem;
 			min-width: auto;
 		}
-		
+
 		.dropdown-container {
 			width: 100%;
 		}
-		
+
 		.dropdown-container .absolute {
 			max-height: 250px;
 		}
 	}
-	
+
 	@media (max-width: 480px) {
 		.dropdown-container button {
 			padding: 0.375rem 0.5rem;
 			font-size: 0.8rem;
 		}
-		
+
 		.dropdown-container .absolute {
 			max-height: 200px;
 		}

@@ -4,7 +4,7 @@
 	export let aqi: number = 0;
 	export let rating: string = 'Good';
 	export let size: number = 200;
-	
+
 	let showTooltip = false;
 
 	let canvasElement: HTMLCanvasElement;
@@ -31,15 +31,22 @@
 
 	function getAQIEmoji(rating: string): string {
 		switch (rating.toLowerCase()) {
-			case 'good': return '😊';
-			case 'moderate': return '😐';
+			case 'good':
+				return '😊';
+			case 'moderate':
+				return '😐';
 			case 'unhealthy for sensitive groups':
-			case 'unhealthy_sensitive': return '😷';
-			case 'unhealthy': return '😨';
+			case 'unhealthy_sensitive':
+				return '😷';
+			case 'unhealthy':
+				return '😨';
 			case 'very unhealthy':
-			case 'very_unhealthy': return '🤢';
-			case 'hazardous': return '☠️';
-			default: return '😊';
+			case 'very_unhealthy':
+				return '🤢';
+			case 'hazardous':
+				return '☠️';
+			default:
+				return '😊';
 		}
 	}
 
@@ -67,7 +74,7 @@
 		// Calculate progress (0-300 AQI mapped to 0-180 degrees)
 		const maxAQI = 300;
 		const progress = Math.min(aqi / maxAQI, 1);
-		const endAngle = Math.PI + (progress * Math.PI);
+		const endAngle = Math.PI + progress * Math.PI;
 
 		// Draw progress arc
 		ctx.beginPath();
@@ -98,19 +105,14 @@
 
 <div class="flex flex-col items-center">
 	<div class="relative">
-		<canvas
-			bind:this={canvasElement}
-			width={size}
-			height={size}
-			class="drop-shadow-lg"
-		></canvas>
-		
+		<canvas bind:this={canvasElement} width={size} height={size} class="drop-shadow-lg"></canvas>
+
 		<!-- Emoji overlay -->
 		<div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-4xl mt-8">
 			{emoji}
 		</div>
 	</div>
-	
+
 	<!-- Rating label with info tooltip -->
 	<div class="mt-4 text-center relative">
 		<div class="text-xl font-bold" style="color: {strokeColor}">
@@ -118,17 +120,17 @@
 		</div>
 		<div class="text-sm text-gray-600 mt-1 flex items-center justify-center gap-2">
 			<span>Air Quality Index</span>
-			<button 
+			<button
 				class="text-blue-500 hover:text-blue-600 text-xs font-bold border border-blue-500 rounded-full w-4 h-4 flex items-center justify-center"
-				on:mouseenter={() => showTooltip = true}
-				on:mouseleave={() => showTooltip = false}
-				on:focus={() => showTooltip = true}
-				on:blur={() => showTooltip = false}
+				on:mouseenter={() => (showTooltip = true)}
+				on:mouseleave={() => (showTooltip = false)}
+				on:focus={() => (showTooltip = true)}
+				on:blur={() => (showTooltip = false)}
 			>
 				!
 			</button>
 		</div>
-		
+
 		<!-- Tooltip -->
 		{#if showTooltip}
 			<div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-80 z-50">
@@ -136,14 +138,16 @@
 					<div class="font-semibold mb-2 text-blue-300">EPA AQI Calculation Method</div>
 					<div class="space-y-2">
 						<div>
-							<strong>EPA AQI Calculation:</strong><br>
+							<strong>EPA AQI Calculation:</strong><br />
 							<code class="bg-gray-700 px-1 rounded">AQI = highest value among all pollutants</code>
 						</div>
 						<div>
-							<strong>Method:</strong> Each pollutant concentration is converted to an AQI value using EPA breakpoints and Equation 1. The highest individual pollutant AQI becomes the reported AQI.
+							<strong>Method:</strong> Each pollutant concentration is converted to an AQI value using EPA breakpoints and
+							Equation 1. The highest individual pollutant AQI becomes the reported AQI.
 						</div>
 						<div>
-							<strong>Formula:</strong> <code class="bg-gray-700 px-1 rounded text-xs">I = ((IHi-ILo)/(BPHi-BPLo)) × (C-BPLo) + ILo</code>
+							<strong>Formula:</strong>
+							<code class="bg-gray-700 px-1 rounded text-xs">I = ((IHi-ILo)/(BPHi-BPLo)) × (C-BPLo) + ILo</code>
 						</div>
 						<div>
 							<strong>Pollutants:</strong> PM2.5, PM10, O₃, NO₂, SO₂, CO
@@ -152,7 +156,9 @@
 							<strong>Source:</strong> EPA Technical Assistance Document for Reporting Daily Air Quality Index
 						</div>
 					</div>
-					<div class="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+					<div
+						class="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"
+					></div>
 				</div>
 			</div>
 		{/if}

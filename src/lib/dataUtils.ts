@@ -11,26 +11,26 @@ export async function loadAirQualityData(): Promise<AirQualityReading[]> {
 		const parquet = await import('parquet-wasm');
 		await parquet.default();
 		console.log('Parquet WASM loaded successfully');
-		
+
 		const response = await fetch(`${base}/data/african_cities_air_quality_2024_2026.parquet`);
 		if (!response.ok) {
 			throw new Error(`HTTP error! status: ${response.status}`);
 		}
 		console.log('Parquet file fetched successfully, size:', response.headers.get('content-length') || 'unknown');
-		
+
 		const arrayBuffer = await response.arrayBuffer();
 		const uint8Array = new Uint8Array(arrayBuffer);
 		console.log('Parquet file converted to Uint8Array, size:', uint8Array.length, 'bytes');
-		
+
 		const table = parquet.readParquet(uint8Array);
 		console.log('Parquet table parsed successfully');
-		
+
 		const result = await parseParquetTable(table);
 		console.log('Parquet data parsing completed, records:', result.length);
 		return result;
 	} catch (error) {
 		console.error('Failed to load Parquet data, trying CSV fallback:', error);
-		
+
 		// Fallback to CSV
 		try {
 			const response = await fetch(`${base}/data/african_cities_air_quality_2024_2026.csv`);
@@ -66,7 +66,13 @@ function parseCSV(csvText: string): AirQualityReading[] {
 		const reading: any = {};
 		headers.forEach((header, index) => {
 			const value = values[index];
-			if (header === 'station_id' || header === 'datetime' || header === 'city' || header === 'station_name' || header.includes('rating')) {
+			if (
+				header === 'station_id' ||
+				header === 'datetime' ||
+				header === 'city' ||
+				header === 'station_name' ||
+				header.includes('rating')
+			) {
 				reading[header] = value;
 			} else {
 				reading[header] = parseFloat(value) || 0;
@@ -89,10 +95,10 @@ async function parseParquetTable(wasmTable: any): Promise<AirQualityReading[]> {
 		const { tableFromIPC } = await import('apache-arrow');
 		const ipcStream = wasmTable.intoIPCStream();
 		const arrowTable = tableFromIPC(ipcStream);
-		
+
 		const data: AirQualityReading[] = [];
 		const numRows = arrowTable.numRows;
-		
+
 		// Get column data from the Arrow table
 		const columns = {
 			station_id: arrowTable.getChild('station_id')?.toArray() || [],
@@ -122,30 +128,30 @@ async function parseParquetTable(wasmTable: any): Promise<AirQualityReading[]> {
 			so2_rating: arrowTable.getChild('so2_rating')?.toArray() || [],
 			co_rating: arrowTable.getChild('co_rating')?.toArray() || []
 		};
-		
+
 		// Convert columnar data to row-based objects
 		for (let i = 0; i < numRows; i++) {
 			// Convert datetime to ISO string
 			const datetimeValue = columns.datetime[i];
 			let datetimeString: string;
-			
+
 			if (datetimeValue === null || datetimeValue === undefined) {
 				console.warn(`Null datetime at row ${i}`);
 				continue;
 			}
-			
+
 			// Debug: log the first few datetime values to understand the format
 			if (i < 3) {
 				console.log(`Row ${i} datetime:`, datetimeValue, typeof datetimeValue, datetimeValue?.constructor?.name);
 			}
-			
+
 			// Handle different datetime formats from Apache Arrow
 			if (datetimeValue instanceof Date) {
 				datetimeString = datetimeValue.toISOString();
 			} else if (typeof datetimeValue === 'number') {
 				// Numbers could be in various formats - try different interpretations
 				let date: Date;
-				
+
 				// Check if it's a reasonable year (2020-2030 range in seconds since epoch)
 				if (datetimeValue > 1577836800 && datetimeValue < 1893456000) {
 					// Looks like seconds since epoch
@@ -157,18 +163,18 @@ async function parseParquetTable(wasmTable: any): Promise<AirQualityReading[]> {
 					// Default: assume milliseconds
 					date = new Date(datetimeValue);
 				}
-				
+
 				datetimeString = date.toISOString();
 			} else if (typeof datetimeValue === 'bigint') {
 				// Handle BigInt timestamps (likely nanoseconds or microseconds)
 				const valueNum = Number(datetimeValue);
 				let date: Date;
-				
+
 				if (valueNum > 1577836800000000000) {
 					// Nanoseconds since epoch
 					date = new Date(valueNum / 1000000);
 				} else if (valueNum > 1577836800000000) {
-					// Microseconds since epoch  
+					// Microseconds since epoch
 					date = new Date(valueNum / 1000);
 				} else if (valueNum > 1577836800000) {
 					// Milliseconds since epoch
@@ -177,7 +183,7 @@ async function parseParquetTable(wasmTable: any): Promise<AirQualityReading[]> {
 					// Seconds since epoch
 					date = new Date(valueNum * 1000);
 				}
-				
+
 				datetimeString = date.toISOString();
 			} else if (typeof datetimeValue === 'string') {
 				// If it's already a string, parse it
@@ -192,7 +198,7 @@ async function parseParquetTable(wasmTable: any): Promise<AirQualityReading[]> {
 				console.warn(`Unknown datetime type at row ${i}:`, typeof datetimeValue, datetimeValue);
 				continue;
 			}
-			
+
 			const reading: AirQualityReading = {
 				station_id: String(columns.station_id[i] || ''),
 				datetime: datetimeString,
@@ -223,7 +229,7 @@ async function parseParquetTable(wasmTable: any): Promise<AirQualityReading[]> {
 			};
 			data.push(reading);
 		}
-		
+
 		return data;
 	} catch (error) {
 		console.error('Error parsing Parquet table:', error);
@@ -234,7 +240,7 @@ async function parseParquetTable(wasmTable: any): Promise<AirQualityReading[]> {
 export function getStationsFromData(data: AirQualityReading[]): Station[] {
 	const stationMap = new Map<string, Station>();
 
-	data.forEach((reading) => {
+	data.forEach(reading => {
 		if (!stationMap.has(reading.station_id)) {
 			const cityInfo = CITY_INFO[reading.city];
 			stationMap.set(reading.station_id, {
@@ -254,7 +260,7 @@ export function getStationsFromData(data: AirQualityReading[]): Station[] {
 export function getLatestReadings(data: AirQualityReading[]): AirQualityReading[] {
 	const latestMap = new Map<string, AirQualityReading>();
 
-	data.forEach((reading) => {
+	data.forEach(reading => {
 		const existing = latestMap.get(reading.station_id);
 		if (!existing || new Date(reading.datetime) > new Date(existing.datetime)) {
 			latestMap.set(reading.station_id, reading);
@@ -264,29 +270,25 @@ export function getLatestReadings(data: AirQualityReading[]): AirQualityReading[
 	return Array.from(latestMap.values());
 }
 
-export function filterDataByDateRange(
-	data: AirQualityReading[],
-	startDate: Date,
-	endDate: Date
-): AirQualityReading[] {
-	return data.filter((reading) => {
+export function filterDataByDateRange(data: AirQualityReading[], startDate: Date, endDate: Date): AirQualityReading[] {
+	return data.filter(reading => {
 		const readingDate = new Date(reading.datetime);
 		return readingDate >= startDate && readingDate <= endDate;
 	});
 }
 
 export function filterDataByCity(data: AirQualityReading[], city: string): AirQualityReading[] {
-	return data.filter((reading) => reading.city === city);
+	return data.filter(reading => reading.city === city);
 }
 
 export function getDataForStation(data: AirQualityReading[], stationId: string): AirQualityReading[] {
-	return data.filter((reading) => reading.station_id === stationId);
+	return data.filter(reading => reading.station_id === stationId);
 }
 
 export function calculateCityAverages(data: AirQualityReading[]): Record<string, AirQualityReading> {
 	const cityGroups: Record<string, AirQualityReading[]> = {};
-	
-	data.forEach((reading) => {
+
+	data.forEach(reading => {
 		if (!cityGroups[reading.city]) {
 			cityGroups[reading.city] = [];
 		}
@@ -338,17 +340,17 @@ function getMostCommonRating(ratings: any[]): any {
 	ratings.forEach(rating => {
 		counts[rating] = (counts[rating] || 0) + 1;
 	});
-	
+
 	let mostCommon = ratings[0];
 	let maxCount = 0;
-	
+
 	Object.entries(counts).forEach(([rating, count]) => {
 		if (count > maxCount) {
 			maxCount = count;
 			mostCommon = rating;
 		}
 	});
-	
+
 	return mostCommon;
 }
 
@@ -361,19 +363,24 @@ export function simulateCurrentTime(): Date {
 
 export function getDataUpToCurrentTime(data: AirQualityReading[]): AirQualityReading[] {
 	const currentTime = simulateCurrentTime();
-	const filteredData = data.filter((reading) => new Date(reading.datetime) <= currentTime);
-	
-	console.log(`Filtered data from ${data.length} to ${filteredData.length} records (up to ${currentTime.toISOString()})`);
-	
+	const filteredData = data.filter(reading => new Date(reading.datetime) <= currentTime);
+
+	console.log(
+		`Filtered data from ${data.length} to ${filteredData.length} records (up to ${currentTime.toISOString()})`
+	);
+
 	// Log year distribution after filtering
-	const yearCounts = filteredData.reduce((acc, reading) => {
-		const year = new Date(reading.datetime).getFullYear();
-		acc[year] = (acc[year] || 0) + 1;
-		return acc;
-	}, {} as Record<number, number>);
-	
+	const yearCounts = filteredData.reduce(
+		(acc, reading) => {
+			const year = new Date(reading.datetime).getFullYear();
+			acc[year] = (acc[year] || 0) + 1;
+			return acc;
+		},
+		{} as Record<number, number>
+	);
+
 	console.log('Year distribution after current time filter:', yearCounts);
-	
+
 	return filteredData;
 }
 
@@ -446,7 +453,7 @@ export function aggregateDataByTime(
 
 		// Use the first reading as a template
 		const template = readings[0];
-		
+
 		// Calculate averages for numeric fields
 		const avgReading: AirQualityReading = {
 			...template,

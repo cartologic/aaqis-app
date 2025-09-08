@@ -1,8 +1,22 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import type { AirQualityReading, Station } from '$lib/types';
-	import { loadAirQualityData, getStationsFromData, getLatestReadings, getDataUpToCurrentTime, simulateCurrentTime, getAQIEmoji, aggregateDataByTime } from '$lib/dataUtils';
-	import { getUserLocation, findNearestStation, getStationReading, getLocationBasedMessage, type UserLocation } from '$lib/locationService';
+	import {
+		loadAirQualityData,
+		getStationsFromData,
+		getLatestReadings,
+		getDataUpToCurrentTime,
+		simulateCurrentTime,
+		getAQIEmoji,
+		aggregateDataByTime
+	} from '$lib/dataUtils';
+	import {
+		getUserLocation,
+		findNearestStation,
+		getStationReading,
+		getLocationBasedMessage,
+		type UserLocation
+	} from '$lib/locationService';
 	import { CITY_INFO, COUNTRY_COLOR_PALETTE } from '$lib/types';
 	import MapComponent from '$lib/components/MapComponent.svelte';
 	import AQIGauge from '$lib/components/AQIGauge.svelte';
@@ -47,18 +61,18 @@
 		// Load location first
 		console.log('Starting onMount...');
 		userLocation = await getUserLocation();
-		
+
 		// Load air quality data with performance tracking
 		const loadStartTime = performance.now();
 		try {
 			allData = await loadAirQualityData();
 			const loadTime = performance.now() - loadStartTime;
-			
+
 			console.log(`Loaded ${allData.length} total records from Parquet file`);
-			
+
 			// Track data loading performance
 			aaqisAnalytics.trackDataLoad(allData.length, loadTime);
-			
+
 			// Log date range of loaded data
 			if (allData.length > 0) {
 				const dates = allData.map(r => new Date(r.datetime)).sort((a, b) => a.getTime() - b.getTime());
@@ -71,33 +85,35 @@
 		} catch (error) {
 			console.error('Error loading parquet data:', error);
 			// Track data loading error
-			aaqisAnalytics.trackCustomEvent('data_load_error', { error: error.message });
+			aaqisAnalytics.trackCustomEvent('data_load_error', {
+				error: error instanceof Error ? error.message : String(error)
+			});
 		}
-		
+
 		// If no data loaded, create sample data for testing
 		if (allData.length === 0) {
 			console.warn('No data loaded from Parquet file, using sample data');
 			allData = createSampleData();
 			console.log('Created sample data:', allData.length, 'records');
 		}
-		
+
 		const currentData = getDataUpToCurrentTime(allData);
 		console.log('Current data after time filter:', currentData.length);
-		
+
 		stations = getStationsFromData(currentData);
 		console.log('Stations extracted:', stations.length, stations);
-		
+
 		latestReadings = getLatestReadings(currentData);
 		console.log('Latest readings:', latestReadings.length, latestReadings.slice(0, 3));
-		
+
 		filteredData = currentData;
 		visibleStations = stations; // Initialize with all stations
-		
+
 		// Find nearest station and auto-select it for user-centric initialization
 		if (userLocation && stations.length > 0) {
 			nearestStation = findNearestStation(userLocation, stations);
 			console.log('Found nearest station to user location:', nearestStation?.name);
-			
+
 			// Auto-select nearest station for better UX - map will initialize at this location
 			if (nearestStation) {
 				selectedCity = nearestStation.city;
@@ -120,13 +136,13 @@
 	$effect(() => {
 		// Get available years for current filters
 		let baseData = getDataUpToCurrentTime(allData);
-		
+
 		// Only filter by station if selected (not by city anymore)
 		if (selectedStation?.id) {
 			baseData = baseData.filter(reading => reading.station_id === selectedStation!.id);
 		}
 		const availableYears = [...new Set(baseData.map(r => new Date(r.datetime).getFullYear()))];
-		
+
 		// If current selected year is not available, pick the most recent available year
 		if (availableYears.length > 0 && !availableYears.includes(calendarSelectedYear)) {
 			calendarSelectedYear = Math.max(...availableYears);
@@ -140,16 +156,16 @@
 			let availableCities = new Set<string>();
 			let availableStations = new Set<string>();
 			let dateRange = { min: new Date(), max: new Date(0) };
-			
+
 			// First pass: collect available options based on current filters
 			let tempFiltered = [...filtered];
-			
+
 			// Apply date range filter first (most restrictive)
 			if (selectedDateRange !== 'now') {
 				// Use actual current time for date range calculations
 				const now = new Date();
 				let startDateObj, endDateObj;
-				
+
 				switch (selectedDateRange) {
 					case 'today':
 						startDateObj = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -175,12 +191,12 @@
 						// Set end date to end of day
 						endDateObj.setHours(23, 59, 59, 999);
 				}
-				
+
 				tempFiltered = tempFiltered.filter(reading => {
 					try {
 						// Enhanced datetime parsing for Parquet data compatibility
 						let readingDate: Date;
-						
+
 						if (typeof reading.datetime === 'string') {
 							// Handle ISO string format from Parquet conversion
 							readingDate = new Date(reading.datetime);
@@ -191,13 +207,13 @@
 							// Fallback for other formats
 							readingDate = new Date(reading.datetime);
 						}
-						
+
 						// Validate the parsed date
 						if (isNaN(readingDate.getTime())) {
 							console.warn('Invalid datetime value:', reading.datetime);
 							return false;
 						}
-						
+
 						return readingDate >= startDateObj && readingDate <= endDateObj;
 					} catch (error) {
 						console.warn('Error parsing datetime:', reading.datetime, error);
@@ -205,13 +221,13 @@
 					}
 				});
 			}
-			
+
 			// Don't filter by city anymore - show all cities
-			
+
 			// Apply data aggregation for time-based filtering
 			if (selectedDateRange !== 'now' && tempFiltered.length > 0) {
 				let aggregationType: 'hourly' | 'daily' | 'weekly' = 'daily';
-				
+
 				// Choose aggregation type based on date range
 				switch (selectedDateRange) {
 					case 'today':
@@ -224,11 +240,11 @@
 						aggregationType = 'daily';
 						break;
 					case 'custom':
-					// Determine aggregation based on date range length
-					const startDateObj = startDate ? new Date(startDate) : null;
-					const endDateObj = endDate ? new Date(endDate) : null;
-					const daysDiff = endDateObj && startDateObj ? 
-						(endDateObj.getTime() - startDateObj.getTime()) / (1000 * 60 * 60 * 24) : 7;
+						// Determine aggregation based on date range length
+						const startDateObj = startDate ? new Date(startDate) : null;
+						const endDateObj = endDate ? new Date(endDate) : null;
+						const daysDiff =
+							endDateObj && startDateObj ? (endDateObj.getTime() - startDateObj.getTime()) / (1000 * 60 * 60 * 24) : 7;
 						if (daysDiff <= 1) {
 							aggregationType = 'hourly';
 						} else if (daysDiff <= 30) {
@@ -238,19 +254,19 @@
 						}
 						break;
 				}
-				
+
 				tempFiltered = aggregateDataByTime(tempFiltered, aggregationType);
 			}
-			
+
 			// Auto-detect available options after filtering
 			tempFiltered.forEach(reading => {
 				availableCities.add(reading.city);
 				availableStations.add(reading.station_id);
-				
+
 				// Enhanced date range tracking with error handling
 				try {
 					let readingDate: Date;
-					
+
 					if (typeof reading.datetime === 'string') {
 						readingDate = new Date(reading.datetime);
 					} else if (typeof reading.datetime === 'number') {
@@ -258,7 +274,7 @@
 					} else {
 						readingDate = new Date(reading.datetime);
 					}
-					
+
 					if (!isNaN(readingDate.getTime())) {
 						if (readingDate < dateRange.min) dateRange.min = readingDate;
 						if (readingDate > dateRange.max) dateRange.max = readingDate;
@@ -267,29 +283,26 @@
 					console.warn('Error tracking date range for:', reading.datetime, error);
 				}
 			});
-			
+
 			// Smart station validation: auto-clear invalid station selection
 			if (selectedStation && !availableStations.has(selectedStation.id)) {
 				selectedStation = null;
 				isManualSelection = false;
 			}
-			
+
 			filteredData = tempFiltered;
 			latestReadings = getLatestReadings(tempFiltered);
-			
+
 			// Update stations based on filtered data with smart dependency handling
 			stations = getStationsFromData(tempFiltered);
-			
+
 			// Store filter metadata for UI feedback
 			filterMetadata = {
 				availableCities: Array.from(availableCities),
 				availableStations: Array.from(availableStations),
 				dateRange,
 				totalRecords: tempFiltered.length,
-				filtersApplied: [
-					...(selectedDateRange !== 'now' ? ['date'] : []),
-					...(selectedStation ? ['station'] : [])
-				]
+				filtersApplied: [...(selectedDateRange !== 'now' ? ['date'] : []), ...(selectedStation ? ['station'] : [])]
 			};
 		}
 	});
@@ -299,23 +312,27 @@
 	const currentReading = $derived(activeStation ? getStationReading(activeStation, latestReadings) : null);
 	const overallAQI = $derived(currentReading?.overall_aqi || 0);
 	const overallRating = $derived(currentReading?.overall_rating || 'Good');
-	
+
 	// Update header background and location name based on selected location
 	$effect(() => {
 		if (activeStation) {
 			locationName = `${CITY_INFO[activeStation.city]?.displayName || activeStation.city} - ${activeStation.name}`;
 			const country = CITY_INFO[activeStation.city]?.country;
-			headerBackgroundStyle = country ? `background: ${COUNTRY_COLOR_PALETTE[country]}` : 'background: linear-gradient(135deg, #2563eb 0%, #16a34a 50%, #2563eb 100%)';
+			headerBackgroundStyle = country
+				? `background: ${COUNTRY_COLOR_PALETTE[country]}`
+				: 'background: linear-gradient(135deg, #2563eb 0%, #16a34a 50%, #2563eb 100%)';
 		} else if (selectedCity) {
 			locationName = CITY_INFO[selectedCity]?.displayName || selectedCity;
 			const country = CITY_INFO[selectedCity]?.country;
-			headerBackgroundStyle = country ? `background: ${COUNTRY_COLOR_PALETTE[country]}` : 'background: linear-gradient(135deg, #2563eb 0%, #16a34a 50%, #2563eb 100%)';
+			headerBackgroundStyle = country
+				? `background: ${COUNTRY_COLOR_PALETTE[country]}`
+				: 'background: linear-gradient(135deg, #2563eb 0%, #16a34a 50%, #2563eb 100%)';
 		} else {
 			locationName = 'All Cities';
 			headerBackgroundStyle = 'background: linear-gradient(135deg, #2563eb 0%, #16a34a 50%, #2563eb 100%)';
 		}
 	});
-	
+
 	// Update location message when stakeholder changes
 	$effect(() => {
 		if (currentReading) {
@@ -324,7 +341,7 @@
 				currentReading.overall_rating,
 				selectedStakeholder
 			);
-			
+
 			// Track health advice view analytics
 			aaqisAnalytics.trackHealthAdviceView(
 				currentReading.overall_aqi,
@@ -333,17 +350,20 @@
 			);
 		}
 	});
-	
+
 	// Station selection handler
-	function selectStation(station: Station, method: 'map_click' | 'list_click' | 'search' | 'geolocation' = 'list_click') {
+	function selectStation(
+		station: Station,
+		method: 'map_click' | 'list_click' | 'search' | 'geolocation' = 'list_click'
+	) {
 		console.log('selectStation called:', station.id, station.name);
-		
+
 		// Track station selection analytics
 		aaqisAnalytics.trackStationSelection(station.id, station.name, station.city, method);
-		
+
 		selectedStation = station;
 		isManualSelection = true;
-		
+
 		// Fly to station on map (disabled to prevent loops)
 		// if (mapComponent) {
 		// 	console.log('Calling mapComponent.flyToStation');
@@ -358,28 +378,34 @@
 		if (selectedStation && filteredData.length > 0) {
 			// Track heatmap view
 			aaqisAnalytics.trackChartView('heatmap', calendarSelectedPollutant, calendarSelectedYear.toString());
-			
+
 			// Track line chart view
 			aaqisAnalytics.trackChartView('line', selectedPollutant, selectedDateRange);
-			
+
 			// Track gauge view with current reading
 			if (currentReading) {
 				aaqisAnalytics.trackChartView('gauge', 'overall_aqi', 'current');
-				
+
 				// Track pollutant viewing
 				aaqisAnalytics.trackPollutantView('overall_aqi', currentReading.overall_aqi, currentReading.overall_rating);
 			}
 		}
 	});
-	
+
 	// Handle visible stations change from map
 	function handleVisibleStationsChange(newVisibleStations: Station[]) {
 		console.log(`Received visible stations update: ${newVisibleStations.length} stations`);
-		
+
 		// Avoid unnecessary updates if stations are the same
-		const currentIds = visibleStations.map(s => s.id).sort().join(',');
-		const newIds = newVisibleStations.map(s => s.id).sort().join(',');
-		
+		const currentIds = visibleStations
+			.map(s => s.id)
+			.sort()
+			.join(',');
+		const newIds = newVisibleStations
+			.map(s => s.id)
+			.sort()
+			.join(',');
+
 		if (currentIds !== newIds) {
 			console.log(`Updating visible stations from ${visibleStations.length} to ${newVisibleStations.length}`);
 			visibleStations = newVisibleStations;
@@ -387,60 +413,60 @@
 			console.log('Visible stations unchanged, skipping update');
 		}
 	}
-	
+
 	// Handle user location change from map geolocation
-	function handleUserLocationChange(location: {lng: number, lat: number} | null) {
+	function handleUserLocationChange(location: { lng: number; lat: number } | null) {
 		console.log('User location updated from GeolocateControl:', location);
-		
+
 		// Track geolocation usage
 		aaqisAnalytics.trackMapInteraction('geolocation_use');
-		
+
 		if (location && stations.length > 0) {
 			// Update user location state
 			userLocation = {
 				latitude: location.lat,
 				longitude: location.lng
 			};
-			
+
 			// Always find nearest station when user location updates
 			const nearest = findNearestStation(userLocation, stations);
 			if (nearest) {
 				console.log('GeolocateControl: Found nearest station:', nearest.name);
 				nearestStation = nearest;
-				
+
 				// Auto-select nearest station and clear city filter for focused view
 				selectedStation = nearest;
 				selectedCity = ''; // Clear city filter to show focused station view
 				isManualSelection = false; // Mark as automatic selection
-				
+
 				// Track automatic station selection via geolocation
 				aaqisAnalytics.trackStationSelection(nearest.id, nearest.name, nearest.city, 'geolocation');
-				
+
 				console.log(`GeolocateControl: Auto-selected nearest station ${nearest.name} in ${nearest.city}`);
 			}
 		}
 	}
-	
+
 	// Filter event handlers
 	function handleCityChange(event: CustomEvent<string>) {
 		selectedCity = event.detail;
-		
+
 		// Track city filtering analytics
 		const cityStations = stations.filter(s => s.city === selectedCity);
 		aaqisAnalytics.trackCityFilter(selectedCity, cityStations.length);
-		
+
 		// Clear selected station when city changes
 		selectedStation = null;
 		isManualSelection = false;
-		
+
 		console.log(`City changed to: ${selectedCity}, cleared selected station`);
-		
+
 		// Fly to city when selected
 		if (mapComponent && selectedCity) {
 			mapComponent.flyToCity(selectedCity);
 		}
 	}
-	
+
 	function handleStationSelect(event: CustomEvent<Station | null>) {
 		if (event.detail) {
 			selectStation(event.detail);
@@ -449,10 +475,10 @@
 			isManualSelection = false;
 		}
 	}
-	
+
 	function handleDateRangeChange(event: CustomEvent<string>) {
 		selectedDateRange = event.detail;
-		
+
 		// Set date ranges based on selection
 		const now = new Date();
 		switch (selectedDateRange) {
@@ -476,19 +502,19 @@
 				break;
 		}
 	}
-	
-	function handleCustomDateChange(event: CustomEvent<{startDate: string, endDate: string}>) {
+
+	function handleCustomDateChange(event: CustomEvent<{ startDate: string; endDate: string }>) {
 		startDate = event.detail.startDate;
 		endDate = event.detail.endDate;
 	}
-	
+
 	function handleClearFilters() {
 		selectedCity = '';
 		selectedStation = null;
 		selectedDateRange = 'now';
 		isManualSelection = false;
 	}
-	
+
 	function handleClearAllFilters() {
 		selectedCity = '';
 		selectedStation = null;
@@ -499,7 +525,7 @@
 		selectedPollutant = 'pm2_5';
 		selectedStakeholder = 'public';
 	}
-	
+
 	// Reset to user location
 	function resetToUserLocation() {
 		selectedStation = null;
@@ -518,7 +544,7 @@
 	function getAQIColor(rating: string | number): string {
 		const aqi = typeof rating === 'string' ? 0 : rating;
 		const ratingStr = typeof rating === 'string' ? rating.toLowerCase() : '';
-		
+
 		if (ratingStr.includes('good') || aqi <= 50) return '#22c55e';
 		if (ratingStr.includes('moderate') || aqi <= 100) return '#eab308';
 		if (ratingStr.includes('sensitive') || ratingStr.includes('unhealthy') || aqi <= 150) return '#f97316';
@@ -537,41 +563,39 @@
 			timeZoneName: 'short'
 		});
 	}
-	
-	function formatRating(rating: string): string {
-		return rating
-			.replace(/_/g, ' ')
-			.replace(/\b\w/g, l => l.toUpperCase());
-	}
-	
 
-	
+	function formatRating(rating: string): string {
+		return rating.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+	}
+
 	function getCityStats() {
 		const cityGroups: Record<string, AirQualityReading[]> = {};
-		
+
 		latestReadings.forEach(reading => {
 			if (!cityGroups[reading.city]) {
 				cityGroups[reading.city] = [];
 			}
 			cityGroups[reading.city].push(reading);
 		});
-		
-		return Object.entries(cityGroups).map(([city, readings]) => {
-			const maxAQI = Math.max(...readings.map(r => r.overall_aqi));
-			const avgPM25 = readings.reduce((sum, r) => sum + r.pm2_5, 0) / readings.length;
-			const cityInfo = CITY_INFO[city];
-			
-			return {
-				name: cityInfo?.displayName || city,
-				emoji: cityInfo?.emoji || '🌆',
-				aqi: maxAQI,
-				pm25: avgPM25,
-				rating: readings[0]?.overall_rating || 'good',
-				stationCount: readings.length
-			};
-		}).sort((a, b) => b.aqi - a.aqi);
+
+		return Object.entries(cityGroups)
+			.map(([city, readings]) => {
+				const maxAQI = Math.max(...readings.map(r => r.overall_aqi));
+				const avgPM25 = readings.reduce((sum, r) => sum + r.pm2_5, 0) / readings.length;
+				const cityInfo = CITY_INFO[city];
+
+				return {
+					name: cityInfo?.displayName || city,
+					emoji: cityInfo?.emoji || '🌆',
+					aqi: maxAQI,
+					pm25: avgPM25,
+					rating: readings[0]?.overall_rating || 'good',
+					stationCount: readings.length
+				};
+			})
+			.sort((a, b) => b.aqi - a.aqi);
 	}
-	
+
 	// Smart station filtering: prioritize FilterBar selections over bbox filtering (reactive)
 	const displayStations = $derived.by(() => {
 		if (selectedCity) {
@@ -591,8 +615,8 @@
 	});
 
 	function getStationsByCity(stationsToGroup: Station[] = stations) {
-		const cityGroups: Record<string, {station: Station, reading: AirQualityReading}[]> = {};
-		
+		const cityGroups: Record<string, { station: Station; reading: AirQualityReading }[]> = {};
+
 		stationsToGroup.forEach(station => {
 			const reading = latestReadings.find(r => r.station_id === station.id);
 			if (reading) {
@@ -602,26 +626,28 @@
 				cityGroups[station.city].push({ station, reading });
 			}
 		});
-		
-		return Object.entries(cityGroups).map(([city, stationData]) => {
-			const cityInfo = CITY_INFO[city];
-			return {
-				name: cityInfo?.displayName || city,
-				emoji: cityInfo?.emoji || '🌆',
-				stations: stationData.sort((a, b) => b.reading.overall_aqi - a.reading.overall_aqi)
-			};
-		}).sort((a, b) => {
-			const maxAQIA = Math.max(...a.stations.map(s => s.reading.overall_aqi));
-			const maxAQIB = Math.max(...b.stations.map(s => s.reading.overall_aqi));
-			return maxAQIB - maxAQIA;
-		});
+
+		return Object.entries(cityGroups)
+			.map(([city, stationData]) => {
+				const cityInfo = CITY_INFO[city];
+				return {
+					name: cityInfo?.displayName || city,
+					emoji: cityInfo?.emoji || '🌆',
+					stations: stationData.sort((a, b) => b.reading.overall_aqi - a.reading.overall_aqi)
+				};
+			})
+			.sort((a, b) => {
+				const maxAQIA = Math.max(...a.stations.map(s => s.reading.overall_aqi));
+				const maxAQIB = Math.max(...b.stations.map(s => s.reading.overall_aqi));
+				return maxAQIB - maxAQIA;
+			});
 	}
-	
+
 	function createSampleData(): AirQualityReading[] {
 		const now = new Date();
 		const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 		const twoDaysAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
-		
+
 		return [
 			{
 				station_id: 'AA001',
@@ -685,26 +711,27 @@
 
 <svelte:head>
 	<title>Africa Air Quality Information System (AAQIS)</title>
-	<meta name="description" content="Real-time air quality monitoring for African cities - supporting public health, policy decisions, and environmental research." />
+	<meta
+		name="description"
+		content="Real-time air quality monitoring for African cities - supporting public health, policy decisions, and environmental research."
+	/>
 </svelte:head>
 
 <!-- Header -->
-<header class="text-white shadow-xl" style="{headerBackgroundStyle}">
+<header class="text-white shadow-xl" style={headerBackgroundStyle}>
 	<div class="container mx-auto px-3 py-2 md:px-4 md:py-4">
 		<div class="flex flex-col md:flex-row md:items-center md:justify-between">
 			<div class="flex items-center space-x-2 md:space-x-3 mb-2 md:mb-0">
 				<div class="text-lg md:text-2xl">🌍</div>
 				<div>
-					<h1 class="text-lg md:text-2xl font-bold font-african text-white">
-						AAQIS
-					</h1>
-					<p class="text-xs text-blue-100 hidden md:block">
-						Africa Air Quality Information System
-					</p>
+					<h1 class="text-lg md:text-2xl font-bold font-african text-white">AAQIS</h1>
+					<p class="text-xs text-blue-100 hidden md:block">Africa Air Quality Information System</p>
 				</div>
 			</div>
-			
-			<div class="flex flex-row items-center justify-between md:justify-start space-x-3 md:space-x-6 text-xs md:text-sm">
+
+			<div
+				class="flex flex-row items-center justify-between md:justify-start space-x-3 md:space-x-6 text-xs md:text-sm"
+			>
 				<div class="flex items-center space-x-1 md:space-x-2">
 					<div class="w-2 h-2 md:w-3 md:h-3 bg-green-300 rounded-full animate-pulse shadow-lg"></div>
 					<span class="text-white font-medium">Live</span>
@@ -721,7 +748,7 @@
 </header>
 
 <!-- Interactive Filter Bar -->
-<FilterBar 
+<FilterBar
 	{stations}
 	{latestReadings}
 	{filterMetadata}
@@ -756,15 +783,11 @@
 						<h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-6">
 							Air Quality in <span class="text-blue-600">{locationName}</span>
 						</h2>
-						
+
 						<div class="flex justify-center lg:justify-start mb-8">
-							<AQIGauge 
-								aqi={Math.round(overallAQI)} 
-								rating={formatRating(overallRating)}
-								size={200}
-							/>
+							<AQIGauge aqi={Math.round(overallAQI)} rating={formatRating(overallRating)} size={200} />
 						</div>
-						
+
 						<!-- Station Info Card -->
 						{#if activeStation}
 							<div class="bg-white/70 backdrop-blur-sm rounded-xl p-4 shadow-lg">
@@ -779,7 +802,7 @@
 										</div>
 									</div>
 									{#if isManualSelection}
-										<button 
+										<button
 											class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition-colors"
 											onclick={resetToUserLocation}
 										>
@@ -806,17 +829,17 @@
 							</div>
 						{/if}
 					</div>
-					
+
 					<!-- Health Message -->
 					<div class="space-y-6">
 						<!-- Stakeholder Selection -->
 						<div class="bg-white rounded-xl p-6 shadow-lg">
-							<h3 class="text-lg font-semibold text-gray-800 mb-4">
-								🎯 Choose Your Role
-							</h3>
+							<h3 class="text-lg font-semibold text-gray-800 mb-4">🎯 Choose Your Role</h3>
 							<div class="grid grid-cols-2 gap-3">
-								<button 
-									class="p-3 text-left rounded-lg border-2 transition-all duration-200 {selectedStakeholder === 'public' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 hover:border-gray-300'}"
+								<button
+									class="p-3 text-left rounded-lg border-2 transition-all duration-200 {selectedStakeholder === 'public'
+										? 'border-blue-500 bg-blue-50 text-blue-700'
+										: 'border-gray-200 hover:border-gray-300'}"
 									onclick={() => {
 										const prevStakeholder = selectedStakeholder;
 										selectedStakeholder = 'public';
@@ -829,8 +852,11 @@
 									<div class="font-medium">Public</div>
 									<div class="text-xs opacity-75">General citizen</div>
 								</button>
-								<button 
-									class="p-3 text-left rounded-lg border-2 transition-all duration-200 {selectedStakeholder === 'government' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 hover:border-gray-300'}"
+								<button
+									class="p-3 text-left rounded-lg border-2 transition-all duration-200 {selectedStakeholder ===
+									'government'
+										? 'border-blue-500 bg-blue-50 text-blue-700'
+										: 'border-gray-200 hover:border-gray-300'}"
 									onclick={() => {
 										const prevStakeholder = selectedStakeholder;
 										selectedStakeholder = 'government';
@@ -845,14 +871,14 @@
 								</button>
 							</div>
 						</div>
-						
+
 						<!-- Health Advice -->
 						{#if locationMessage}
 							<div class="bg-white rounded-xl p-6 shadow-lg">
 								<div class="flex items-start space-x-4">
 									<div class="text-3xl">
-								{getAQIEmoji(overallRating)}
-							</div>
+										{getAQIEmoji(overallRating)}
+									</div>
 									<div class="flex-1">
 										<h3 class="text-lg font-semibold text-gray-800 mb-3">
 											Advice for {selectedStakeholder === 'public' ? 'You' : 'Policy Makers'}
@@ -868,14 +894,14 @@
 				</div>
 			</div>
 		</section>
-		
+
 		<!-- Line Chart for Time Series Data -->
 		{#if selectedDateRange !== 'now' && filteredData.length > 0}
 			<section class="py-8">
 				<div class="container mx-auto px-4">
 					<div class="bg-white rounded-xl shadow-lg p-6">
-						<LineChart 
-							data={filteredData} 
+						<LineChart
+							data={filteredData}
 							title="Air Quality Trend - {selectedStation ? selectedStation.name : 'All Cities'}"
 							height={400}
 						/>
@@ -887,51 +913,53 @@
 		<!-- Year-to-Date Heatmap -->
 		<section class="py-8">
 			<div class="container mx-auto px-4">
-				<AirQualityHeatmap 
+				<AirQualityHeatmap
 					data={(() => {
 						// Use properly filtered data that includes station filters
 						// but ignore date range filters for calendar view (we need full year data)
 						let baseData = getDataUpToCurrentTime(allData);
-						
+
 						// Don't filter by city anymore - show all cities
-						
+
 						// Apply station filter if selected (this is the key fix!)
 						if (selectedStation?.id) {
 							baseData = baseData.filter(reading => reading.station_id === selectedStation!.id);
 						}
-						
+
 						// Apply year filter for calendar
 						const heatmapData = baseData.filter(reading => {
 							const readingYear = new Date(reading.datetime).getFullYear();
 							return readingYear === calendarSelectedYear;
 						});
-						
-						console.log(`Filtered ${heatmapData.length} records for ${selectedStation ? selectedStation.name : 'all cities'} in ${calendarSelectedYear} heatmap`);
+
+						console.log(
+							`Filtered ${heatmapData.length} records for ${selectedStation ? selectedStation.name : 'all cities'} in ${calendarSelectedYear} heatmap`
+						);
 						return heatmapData;
-					})()} 
+					})()}
 					selectedStation={activeStation}
 					title="Air Quality Calendar View"
 					stationName={activeStation ? activeStation.name : 'All Cities'}
 					availableYears={(() => {
 						// Use same filtering logic for available years
 						let baseData = getDataUpToCurrentTime(allData);
-						
+
 						// Don't filter by city anymore - show all cities
-						
+
 						// Apply station filter if selected
 						if (selectedStation?.id) {
 							baseData = baseData.filter(reading => reading.station_id === selectedStation!.id);
 							console.log('After station filter:', baseData.length, 'records for station:', selectedStation!.id);
 						}
-						
+
 						const years = [...new Set(baseData.map(r => new Date(r.datetime).getFullYear()))].sort((a, b) => b - a);
 						console.log('Available years calculated for calendar:', years);
 						return years;
 					})()}
 					selectedYear={calendarSelectedYear}
 					selectedPollutant={calendarSelectedPollutant}
-					on:yearChange={(e) => calendarSelectedYear = e.detail}
-					on:pollutantChange={(e) => calendarSelectedPollutant = e.detail}
+					on:yearChange={e => (calendarSelectedYear = e.detail)}
+					on:pollutantChange={e => (calendarSelectedPollutant = e.detail)}
 				/>
 			</div>
 		</section>
@@ -939,30 +967,24 @@
 		<!-- Map and City Data Section -->
 		<section class="py-8 bg-white">
 			<div class="container mx-auto px-4">
-				<h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-8 text-center">
-					🗺️ Live Air Quality Monitoring
-				</h2>
+				<h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-8 text-center">🗺️ Live Air Quality Monitoring</h2>
 				<p class="text-center text-gray-600 mb-8">
 					Click any station on the map or in the list to view its real-time data
 				</p>
-				
+
 				<!-- Responsive Layout: Stack on mobile, Side-by-side on desktop -->
 				<div class="flex flex-col lg:flex-row gap-4">
 					<!-- Map Container - Full width on mobile, grows to fill space on desktop -->
 					<div class="flex-1 bg-gray-50 rounded-xl overflow-hidden shadow-lg">
 						<div class="p-4 bg-white border-b">
-							<h3 class="text-lg font-semibold text-gray-800">
-								Map View
-							</h3>
-							<p class="text-sm text-gray-600 mt-1">
-								Interactive air quality map
-							</p>
+							<h3 class="text-lg font-semibold text-gray-800">Map View</h3>
+							<p class="text-sm text-gray-600 mt-1">Interactive air quality map</p>
 						</div>
 						<div class="h-[400px] sm:h-[500px] lg:h-[600px]">
-							<MapComponent 
+							<MapComponent
 								bind:this={mapComponent}
-								{stations} 
-								{latestReadings} 
+								{stations}
+								{latestReadings}
 								selectedStation={activeStation}
 								{selectedCity}
 								onStationSelect={selectStation}
@@ -971,14 +993,12 @@
 							/>
 						</div>
 					</div>
-					
+
 					<!-- Sidebar Panel - Bottom on mobile, Right side on desktop -->
 					<div class="w-full lg:w-80 xl:w-96 bg-white rounded-xl shadow-lg flex flex-col h-[400px] lg:h-[600px]">
 						<div class="p-4 border-b bg-white rounded-t-xl">
 							<div class="flex items-center justify-between">
-								<h3 class="text-lg font-semibold text-gray-800">
-									🌆 Monitoring Stations
-								</h3>
+								<h3 class="text-lg font-semibold text-gray-800">🌆 Monitoring Stations</h3>
 								<div class="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
 									{#if selectedCity}
 										{displayStations.length} in {CITY_INFO[selectedCity]?.displayName || selectedCity}
@@ -988,12 +1008,14 @@
 								</div>
 							</div>
 						</div>
-						
+
 						<div class="flex-1 overflow-y-auto p-4">
 							{#if displayStations.length === 0}
 								<div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
 									{#if selectedCity}
-										<p class="text-blue-800 text-sm">🏙️ No stations found in {CITY_INFO[selectedCity]?.displayName || selectedCity}</p>
+										<p class="text-blue-800 text-sm">
+											🏙️ No stations found in {CITY_INFO[selectedCity]?.displayName || selectedCity}
+										</p>
 									{:else}
 										<p class="text-blue-800 text-sm">📍 Zoom in or pan the map to see stations in that area</p>
 									{/if}
@@ -1001,15 +1023,22 @@
 							{:else}
 								{#each getStationsByCity(displayStations) as cityGroup}
 									<div class="mb-6">
-										<h4 class="text-sm font-medium text-gray-700 mb-3 flex items-center space-x-2 sticky top-0 bg-white py-2">
+										<h4
+											class="text-sm font-medium text-gray-700 mb-3 flex items-center space-x-2 sticky top-0 bg-white py-2"
+										>
 											<span>{cityGroup.emoji}</span>
 											<span>{cityGroup.name}</span>
-											<span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">{cityGroup.stations.length}</span>
+											<span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full"
+												>{cityGroup.stations.length}</span
+											>
 										</h4>
 										<div class="space-y-3">
 											{#each cityGroup.stations as stationData}
-												<button 
-													class="w-full text-left bg-white rounded-lg p-3 shadow-sm border transition-all duration-200 {activeStation?.id === stationData.station.id ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' : 'border-gray-200 hover:border-gray-300 hover:shadow-md'}"
+												<button
+													class="w-full text-left bg-white rounded-lg p-3 shadow-sm border transition-all duration-200 {activeStation?.id ===
+													stationData.station.id
+														? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
+														: 'border-gray-200 hover:border-gray-300 hover:shadow-md'}"
 													onclick={() => selectStation(stationData.station)}
 												>
 													<div class="flex items-center justify-between">
@@ -1023,7 +1052,10 @@
 															</div>
 														</div>
 														<div class="text-right ml-2">
-															<div class="text-lg font-bold" style="color: {getAQIColor(stationData.reading.overall_aqi)}">
+															<div
+																class="text-lg font-bold"
+																style="color: {getAQIColor(stationData.reading.overall_aqi)}"
+															>
 																{Math.round(stationData.reading.overall_aqi)}
 															</div>
 															<div class="text-xs text-gray-600">AQI</div>
@@ -1047,5 +1079,4 @@
 			</div>
 		</section>
 	</main>
-
 {/if}

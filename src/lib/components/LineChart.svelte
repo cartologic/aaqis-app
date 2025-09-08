@@ -24,9 +24,7 @@
 		if (!data || data.length === 0) return null;
 
 		// Sort data by datetime
-		const sortedData = [...data].sort((a, b) => 
-			new Date(a.datetime).getTime() - new Date(b.datetime).getTime()
-		);
+		const sortedData = [...data].sort((a, b) => new Date(a.datetime).getTime() - new Date(b.datetime).getTime());
 
 		const labels = sortedData.map(reading => {
 			const date = new Date(reading.datetime);
@@ -206,25 +204,32 @@
 						mode: 'index',
 						intersect: false,
 						callbacks: {
-							label: function(context: any) {
+							label: function (context: any) {
 								const label = context.dataset.label || '';
 								const value = context.parsed.y;
-								
+
 								// For AQI values, show air quality level
 								if (label.includes('AQI')) {
-									const aqiLevel = value <= 50 ? 'Good' : 
-										value <= 100 ? 'Moderate' : 
-										value <= 150 ? 'Unhealthy for Sensitive Groups' : 
-										value <= 200 ? 'Unhealthy' : 
-										value <= 300 ? 'Very Unhealthy' : 'Hazardous';
+									const aqiLevel =
+										value <= 50
+											? 'Good'
+											: value <= 100
+												? 'Moderate'
+												: value <= 150
+													? 'Unhealthy for Sensitive Groups'
+													: value <= 200
+														? 'Unhealthy'
+														: value <= 300
+															? 'Very Unhealthy'
+															: 'Hazardous';
 									return `${label}: ${Math.round(value)} (${aqiLevel})`;
 								}
-								
+
 								// For concentration values, show with proper decimal places
 								if (label.includes('μg/m³') || label.includes('mg/m³')) {
 									return `${label}: ${value.toFixed(1)}`;
 								}
-								
+
 								return `${label}: ${Math.round(value)}`;
 							}
 						}

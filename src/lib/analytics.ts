@@ -8,27 +8,32 @@ import { browser } from '$app/environment';
 
 export interface AQISAnalytics {
 	// User Journey Events
-	trackStationSelection: (stationId: string, stationName: string, city: string, method: 'map_click' | 'list_click' | 'search' | 'geolocation') => void;
+	trackStationSelection: (
+		stationId: string,
+		stationName: string,
+		city: string,
+		method: 'map_click' | 'list_click' | 'search' | 'geolocation'
+	) => void;
 	trackCityFilter: (cityName: string, stationCount: number) => void;
 	trackPollutantView: (pollutant: string, aqi: number, rating: string) => void;
 	trackDateRangeChange: (range: string, startDate: string, endDate: string) => void;
-	
+
 	// Map Interactions
 	trackMapInteraction: (action: 'zoom' | 'pan' | 'marker_click' | 'popup_open' | 'geolocation_use') => void;
 	trackBboxFilter: (visibleStations: number, totalStations: number) => void;
-	
+
 	// Stakeholder Insights
 	trackStakeholderSwitch: (from: string, to: string) => void;
 	trackHealthAdviceView: (aqi: number, rating: string, stakeholder: string) => void;
-	
+
 	// Data Visualization
 	trackChartView: (chartType: 'heatmap' | 'line' | 'gauge', pollutant: string, timespan: string) => void;
 	trackDataExport: (format: string, dataSize: number) => void;
-	
+
 	// Performance & Engagement
 	trackDataLoad: (recordCount: number, loadTime: number) => void;
 	trackAppEngagement: (sessionDuration: number, actionsCount: number) => void;
-	
+
 	// Air Quality Alerts
 	trackAQIAlert: (level: string, value: number, location: string) => void;
 	trackHealthRecommendation: (recommendation: string, aqiLevel: string) => void;
@@ -55,7 +60,12 @@ class AQISAnalyticsImpl implements AQISAnalytics {
 	}
 
 	// User Journey Events
-	trackStationSelection(stationId: string, stationName: string, city: string, method: 'map_click' | 'list_click' | 'search' | 'geolocation') {
+	trackStationSelection(
+		stationId: string,
+		stationName: string,
+		city: string,
+		method: 'map_click' | 'list_click' | 'search' | 'geolocation'
+	) {
 		this.track('station_selected', {
 			station_id: stationId,
 			station_name: stationName,

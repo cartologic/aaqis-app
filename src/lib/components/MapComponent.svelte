@@ -1,12 +1,5 @@
 <script lang="ts">
-	import {
-		MapLibre,
-		GeoJSONSource,
-		CircleLayer,
-		Marker,
-		Popup,
-		GeolocateControl
-	} from 'svelte-maplibre-gl';
+	import { MapLibre, GeoJSONSource, CircleLayer, Marker, Popup, GeolocateControl } from 'svelte-maplibre-gl';
 	import { untrack } from 'svelte';
 	import maplibregl from 'maplibre-gl';
 	import type { Map, MapGeoJSONFeature } from 'maplibre-gl';
@@ -22,10 +15,10 @@
 		selectedCity?: string;
 		onStationSelect?: (station: Station) => void;
 		onVisibleStationsChange?: (stations: Station[]) => void;
-		onUserLocationChange?: (location: {lng: number, lat: number} | null) => void;
+		onUserLocationChange?: (location: { lng: number; lat: number } | null) => void;
 	}
 
-	let { 
+	let {
 		stations = [],
 		latestReadings = [],
 		selectedStation = null,
@@ -46,7 +39,7 @@
 	let map = $state<Map | undefined>();
 	let mapContainer: HTMLDivElement;
 	let isMapReady = $state(false);
-	let userLocation = $state<{lng: number, lat: number} | null>(null);
+	let userLocation = $state<{ lng: number; lat: number } | null>(null);
 
 	// Export methods for parent component
 	export function flyToStation(station: Station) {
@@ -55,12 +48,12 @@
 			console.log('Map not available, cannot fly to station');
 			return;
 		}
-		
+
 		const cityInfo = CITY_INFO[station.city];
 		const zoom = cityInfo?.zoom || 14;
-		
+
 		console.log('Flying to station:', station.name, 'at', [station.longitude, station.latitude], 'zoom:', zoom);
-		
+
 		map.flyTo({
 			center: [station.longitude, station.latitude],
 			zoom: zoom,
@@ -77,15 +70,15 @@
 			console.log('Map not available for city fly-to');
 			return;
 		}
-		
+
 		const cityInfo = CITY_INFO[cityName];
 		if (!cityInfo) {
 			console.log('No city info found for:', cityName);
 			return;
 		}
-		
+
 		const cityStations = stations.filter(s => s.city === cityName);
-		
+
 		if (cityStations.length === 0) {
 			console.log('No stations in city, flying to city center:', cityInfo.center);
 			map.flyTo({
@@ -104,17 +97,17 @@
 
 	export function fitToStations(stationsToFit: Station[] = stations) {
 		if (!map || stationsToFit.length === 0) return;
-		
+
 		if (stationsToFit.length === 1) {
 			flyToStation(stationsToFit[0]);
 			return;
 		}
-		
+
 		const bounds = new maplibregl.LngLatBounds();
 		stationsToFit.forEach(station => {
 			bounds.extend([station.longitude, station.latitude]);
 		});
-		
+
 		map.fitBounds(bounds, {
 			padding: { top: 50, bottom: 50, left: 50, right: 50 },
 			duration: 1500,
@@ -156,24 +149,24 @@
 
 	// Track map bounds changes manually (not reactive)
 	let mapBoundsChanged = $state(0);
-	
+
 	// Compute visible stations using proper $derived with enhanced bbox filtering
 	const visibleStations = $derived.by(() => {
 		// Force recalculation when map bounds or stations change
 		mapBoundsChanged;
-		
+
 		if (!map || stations.length === 0) {
 			return stations;
 		}
-		
+
 		try {
 			const bounds = map.getBounds();
-			
+
 			// Get visible stations by checking if they're within the viewport
 			const stationsInView = stations.filter(station => {
 				return bounds.contains([station.longitude, station.latitude]);
 			});
-			
+
 			console.log(`Bbox filtering: ${stationsInView.length}/${stations.length} stations visible in current viewport`);
 			return stationsInView;
 		} catch (error) {
@@ -184,20 +177,23 @@
 
 	// Track last notified stations outside of reactive context
 	let lastNotifiedIds = '';
-	
+
 	// Properly notify parent when visible stations change
 	$effect(() => {
 		if (isMapReady && onVisibleStationsChange && visibleStations) {
-			const currentIds = visibleStations.map(s => s.id).sort().join(',');
-			
+			const currentIds = visibleStations
+				.map(s => s.id)
+				.sort()
+				.join(',');
+
 			if (currentIds !== lastNotifiedIds) {
 				// Update tracking outside the reactive system
 				untrack(() => {
 					lastNotifiedIds = currentIds;
-					
+
 					// Track bbox filtering analytics
 					aaqisAnalytics.trackBboxFilter(visibleStations.length, stations.length);
-					
+
 					onVisibleStationsChange(visibleStations);
 				});
 			}
@@ -226,11 +222,11 @@
 			console.log('Map already loaded, skipping initialization');
 			return;
 		}
-		
+
 		map = event.detail;
 		isMapReady = true;
 		console.log('Map loaded, isMapReady:', isMapReady, 'stations:', stations.length);
-		
+
 		// Add map event listeners to update visible stations
 		if (map) {
 			console.log('Adding map event listeners for bbox filtering');
@@ -246,17 +242,17 @@
 				console.log('Map dragend - updating visible stations');
 				updateVisibleStations();
 			});
-			
+
 			// Also listen to idle event for comprehensive coverage
 			map.on('idle', () => {
 				console.log('Map idle - updating visible stations');
 				updateVisibleStations();
 			});
 		}
-		
+
 		// Initial update
 		updateVisibleStations();
-		
+
 		// Initial map positioning: If we have a selected station, fly to it; otherwise fit all stations
 		if (stations.length > 0) {
 			if (selectedStation) {
@@ -271,20 +267,18 @@
 
 	function handleStationClick(station: Station) {
 		console.log('Station clicked:', station.id, station.name);
-		
+
 		// Track map marker click
 		aaqisAnalytics.trackMapInteraction('marker_click');
 		aaqisAnalytics.trackStationSelection(station.id, station.name, station.city, 'map_click');
-		
+
 		onStationSelect(station);
 		// Auto fly to station when clicked
 		flyToStation(station);
 	}
 
 	function formatRating(rating: string): string {
-		return rating
-			.replace(/_/g, ' ')
-			.replace(/\b\w/g, l => l.toUpperCase());
+		return rating.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 	}
 
 	// Geolocation handlers
@@ -294,12 +288,12 @@
 			lng: event.coords.longitude,
 			lat: event.coords.latitude
 		};
-		
+
 		// Always notify parent component about user location for nearest station finding
 		if (onUserLocationChange) {
 			onUserLocationChange(userLocation);
 		}
-		
+
 		// If no station is currently selected, this will trigger parent to find nearest station
 		// which will then call flyToStation via the selectedStation effect
 		console.log('GeolocateControl activated - parent will handle nearest station selection');
@@ -334,7 +328,7 @@
 		onload={handleMapLoad}
 	>
 		<!-- Markers will be rendered inside isMapReady block to avoid duplication -->
-		
+
 		{#if isMapReady}
 			<!-- Enhanced Geolocation Control -->
 			<GeolocateControl
@@ -347,15 +341,12 @@
 				ongeolocate={handleGeolocate}
 				ontrackuserlocationstart={handleTrackUserLocationStart}
 				ontrackuserlocationend={handleTrackUserLocationEnd}
-				onerror={(ev) => console.warn('GeolocateControl error:', ev.message)}
+				onerror={ev => console.warn('GeolocateControl error:', ev.message)}
 				onoutofmaxbounds={() => console.log('User location out of max bounds')}
 			/>
 
 			<!-- GeoJSON source with all stations (removed QueryRenderedFeatures to prevent loops) -->
-			<GeoJSONSource
-				id="stations"
-				data={stationsGeoJSON}
-			>
+			<GeoJSONSource id="stations" data={stationsGeoJSON}>
 				<!-- Hidden layer for querying -->
 				<CircleLayer
 					id="stations-layer"
@@ -373,10 +364,13 @@
 					{@const statusEmoji = getAQIEmoji(reading.overall_rating)}
 					<Marker lnglat={[station.longitude, station.latitude]} draggable={false}>
 						{#snippet content()}
-							<div 
-								class="text-center leading-none cursor-pointer transform hover:scale-110 transition-all duration-200 {selectedStation?.id === station.id ? 'scale-125 ring-4 ring-blue-400 ring-opacity-50 rounded-full' : ''}"
+							<div
+								class="text-center leading-none cursor-pointer transform hover:scale-110 transition-all duration-200 {selectedStation?.id ===
+								station.id
+									? 'scale-125 ring-4 ring-blue-400 ring-opacity-50 rounded-full'
+									: ''}"
 								onclick={() => handleStationClick(station)}
-								onkeydown={(e) => e.key === 'Enter' && handleStationClick(station)}
+								onkeydown={e => e.key === 'Enter' && handleStationClick(station)}
 								tabindex="0"
 								role="button"
 								aria-label="Select {station.name} station"
@@ -387,14 +381,19 @@
 								<div class="text-xs font-bold text-white drop-shadow-lg bg-black/70 px-2 py-1 rounded-full mt-1">
 									{station.name.replace('Station', '').trim()}
 								</div>
-								<div 
-									class="w-3 h-3 rounded-full border-2 border-white mx-auto mt-1 pulse-glow {selectedStation?.id === station.id ? 'w-4 h-4' : ''}"
+								<div
+									class="w-3 h-3 rounded-full border-2 border-white mx-auto mt-1 pulse-glow {selectedStation?.id ===
+									station.id
+										? 'w-4 h-4'
+										: ''}"
 									style="background-color: {getAQIColor(reading.overall_rating)}"
 								></div>
 							</div>
 						{/snippet}
 						<Popup class="custom-popup" offset={[0, -10]}>
-							<div class="bg-white rounded-xl shadow-2xl border border-gray-200 p-4 min-w-[280px] backdrop-blur-sm bg-white/95">
+							<div
+								class="bg-white rounded-xl shadow-2xl border border-gray-200 p-4 min-w-[280px] backdrop-blur-sm bg-white/95"
+							>
 								<div class="flex items-center justify-between mb-3">
 									<div>
 										<h3 class="font-bold text-lg text-gray-800">{station.name}</h3>
@@ -407,11 +406,11 @@
 										<div class="text-xs text-gray-600 mt-1">Click to select</div>
 									</div>
 								</div>
-								
+
 								<div class="mb-4">
 									<div class="flex items-center justify-between mb-2">
 										<span class="font-medium text-gray-700">Air Quality:</span>
-										<span 
+										<span
 											class="px-3 py-1 rounded-full text-sm font-medium text-white"
 											style="background-color: {getAQIColor(reading.overall_rating)}"
 										>
@@ -427,17 +426,23 @@
 									<div class="bg-gray-50 p-2 rounded text-center">
 										<div class="font-medium text-gray-800">PM₂.₅</div>
 										<div class="text-xs text-gray-600">{reading.pm2_5.toFixed(1)} µg/m³</div>
-										<div class="text-xs font-medium" style="color: {getAQIColor(reading.pm2_5_rating)}">AQI {Math.round(reading.pm2_5_aqi)}</div>
+										<div class="text-xs font-medium" style="color: {getAQIColor(reading.pm2_5_rating)}">
+											AQI {Math.round(reading.pm2_5_aqi)}
+										</div>
 									</div>
 									<div class="bg-gray-50 p-2 rounded text-center">
 										<div class="font-medium text-gray-800">PM₁₀</div>
 										<div class="text-xs text-gray-600">{reading.pm10.toFixed(1)} µg/m³</div>
-										<div class="text-xs font-medium" style="color: {getAQIColor(reading.pm10_rating)}">AQI {Math.round(reading.pm10_aqi)}</div>
+										<div class="text-xs font-medium" style="color: {getAQIColor(reading.pm10_rating)}">
+											AQI {Math.round(reading.pm10_aqi)}
+										</div>
 									</div>
 									<div class="bg-gray-50 p-2 rounded text-center">
 										<div class="font-medium text-gray-800">O₃</div>
 										<div class="text-xs text-gray-600">{reading.o3.toFixed(1)} µg/m³</div>
-										<div class="text-xs font-medium" style="color: {getAQIColor(reading.o3_rating)}">AQI {Math.round(reading.o3_aqi)}</div>
+										<div class="text-xs font-medium" style="color: {getAQIColor(reading.o3_rating)}">
+											AQI {Math.round(reading.o3_aqi)}
+										</div>
 									</div>
 								</div>
 
@@ -445,17 +450,23 @@
 									<div class="bg-gray-50 p-2 rounded text-center">
 										<div class="font-medium text-gray-800">NO₂</div>
 										<div class="text-xs text-gray-600">{reading.no2.toFixed(1)} µg/m³</div>
-										<div class="text-xs font-medium" style="color: {getAQIColor(reading.no2_rating)}">AQI {Math.round(reading.no2_aqi)}</div>
+										<div class="text-xs font-medium" style="color: {getAQIColor(reading.no2_rating)}">
+											AQI {Math.round(reading.no2_aqi)}
+										</div>
 									</div>
 									<div class="bg-gray-50 p-2 rounded text-center">
 										<div class="font-medium text-gray-800">SO₂</div>
 										<div class="text-xs text-gray-600">{reading.so2.toFixed(1)} µg/m³</div>
-										<div class="text-xs font-medium" style="color: {getAQIColor(reading.so2_rating)}">AQI {Math.round(reading.so2_aqi)}</div>
+										<div class="text-xs font-medium" style="color: {getAQIColor(reading.so2_rating)}">
+											AQI {Math.round(reading.so2_aqi)}
+										</div>
 									</div>
 									<div class="bg-gray-50 p-2 rounded text-center">
 										<div class="font-medium text-gray-800">CO</div>
 										<div class="text-xs text-gray-600">{reading.co.toFixed(1)} mg/m³</div>
-										<div class="text-xs font-medium" style="color: {getAQIColor(reading.co_rating)}">AQI {Math.round(reading.co_aqi)}</div>
+										<div class="text-xs font-medium" style="color: {getAQIColor(reading.co_rating)}">
+											AQI {Math.round(reading.co_aqi)}
+										</div>
 									</div>
 								</div>
 
@@ -486,7 +497,9 @@
 	:global(.custom-popup .maplibregl-popup-content) {
 		background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%) !important;
 		border-radius: 12px !important;
-		box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.8) !important;
+		box-shadow:
+			0 25px 50px rgba(0, 0, 0, 0.25),
+			0 0 0 1px rgba(255, 255, 255, 0.8) !important;
 		border: none !important;
 		padding: 0 !important;
 		backdrop-filter: blur(10px) !important;
@@ -519,7 +532,8 @@
 	}
 
 	@keyframes pulse-glow {
-		0%, 100% {
+		0%,
+		100% {
 			box-shadow: 0 0 5px currentColor;
 			opacity: 1;
 		}

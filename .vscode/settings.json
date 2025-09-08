@@ -1,0 +1,59 @@
+{
+	// Svelte 5 and TypeScript
+	"svelte.enable-ts-plugin": true,
+	"svelte.plugin.svelte.compilerWarnings": {
+		"css-unused-selector": "ignore"
+	},
+	
+	// ESLint integration
+	"eslint.enable": true,
+	"eslint.validate": ["javascript", "typescript", "svelte"],
+	"eslint.format.enable": true,
+	
+	// Prettier integration
+	"prettier.enable": true,
+	"prettier.requireConfig": true,
+	
+	// Format on save
+	"editor.formatOnSave": true,
+	"editor.codeActionsOnSave": {
+		"source.fixAll.eslint": "explicit"
+	},
+	
+	// File associations
+	"files.associations": {
+		"*.svelte": "svelte"
+	},
+	
+	// Editor settings for consistency
+	"editor.tabSize": 2,
+	"editor.insertSpaces": false,
+	"editor.detectIndentation": false,
+	
+	// Tailwind CSS IntelliSense
+	"tailwindCSS.includeLanguages": {
+		"svelte": "html"
+	},
+	"tailwindCSS.classAttributes": [
+		"class",
+		"className",
+		"ngClass"
+	],
+	
+	// File exclusions
+	"files.exclude": {
+		"**/.svelte-kit": true,
+		"**/node_modules": true,
+		"**/build": true,
+		"**/.DS_Store": true
+	},
+	
+	// Search exclusions
+	"search.exclude": {
+		"**/node_modules": true,
+		"**/.svelte-kit": true,
+		"**/build": true,
+		"**/package-lock.json": true,
+		"**/bun.lockb": true
+	}
+}

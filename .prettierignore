@@ -1,0 +1,38 @@
+# Build outputs
+build/
+.svelte-kit/
+dist/
+.output/
+
+# Dependencies
+node_modules/
+
+# Logs
+*.log
+
+# Cache directories
+.cache/
+.parcel-cache/
+.vite/
+
+# Environment files
+.env*
+
+# Static assets that shouldn't be formatted
+static/
+public/
+
+# Data files
+*.parquet
+*.csv
+*.json
+
+# Generated files
+*.d.ts
+*.min.js
+*.min.css
+
+# Package manager
+pnpm-lock.yaml
+package-lock.json
+bun.lockb

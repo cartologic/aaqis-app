@@ -9,10 +9,13 @@
 		totalRecords: allData.length,
 		filteredRecords: filteredData.length,
 		availableYears: allData.length > 0 ? [...new Set(allData.map(r => new Date(r.datetime).getFullYear()))].sort() : [],
-		dateRange: allData.length > 0 ? {
-			first: new Date(Math.min(...allData.map(r => new Date(r.datetime).getTime()))).toISOString().split('T')[0],
-			last: new Date(Math.max(...allData.map(r => new Date(r.datetime).getTime()))).toISOString().split('T')[0]
-		} : null,
+		dateRange:
+			allData.length > 0
+				? {
+						first: new Date(Math.min(...allData.map(r => new Date(r.datetime).getTime()))).toISOString().split('T')[0],
+						last: new Date(Math.max(...allData.map(r => new Date(r.datetime).getTime()))).toISOString().split('T')[0]
+					}
+				: null,
 		cities: allData.length > 0 ? [...new Set(allData.map(r => r.city))].sort() : [],
 		stations: allData.length > 0 ? [...new Set(allData.map(r => r.station_id))].length : 0
 	};
@@ -23,7 +26,7 @@
 
 <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
 	<h3 class="text-lg font-semibold text-yellow-800 mb-3">🐛 Data Debug Information</h3>
-	
+
 	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
 		<div class="bg-white p-3 rounded border">
 			<h4 class="font-medium text-gray-800 mb-2">Data Overview</h4>
@@ -33,7 +36,7 @@
 				<div>Stations: <span class="font-mono">{dataStats.stations}</span></div>
 			</div>
 		</div>
-		
+
 		<div class="bg-white p-3 rounded border">
 			<h4 class="font-medium text-gray-800 mb-2">Date Range</h4>
 			<div class="space-y-1 text-gray-600">
@@ -45,7 +48,7 @@
 				{/if}
 			</div>
 		</div>
-		
+
 		<div class="bg-white p-3 rounded border">
 			<h4 class="font-medium text-gray-800 mb-2">Available Years</h4>
 			<div class="text-gray-600">
@@ -57,7 +60,7 @@
 			</div>
 		</div>
 	</div>
-	
+
 	<div class="mt-4">
 		<h4 class="font-medium text-gray-800 mb-2">Cities</h4>
 		<div class="text-sm text-gray-600">
@@ -68,7 +71,7 @@
 			{/if}
 		</div>
 	</div>
-	
+
 	{#if sampleData.length > 0}
 		<div class="mt-4">
 			<h4 class="font-medium text-gray-800 mb-2">Sample Data (First 3 Records)</h4>
