@@ -10,38 +10,37 @@
 	import LineChart from '$lib/components/LineChart.svelte';
 	import AirQualityHeatmap from '$lib/components/AirQualityHeatmap.svelte';
 
-	let allData: AirQualityReading[] = [];
-	let filteredData: AirQualityReading[] = [];
-	let stations: Station[] = [];
-	let latestReadings: AirQualityReading[] = [];
-	let userLocation: UserLocation | null = null;
-	let nearestStation: Station | null = null;
-	let selectedStation: Station | null = null;
-	let currentReading: AirQualityReading | null = null;
-	let selectedCity = '';
-	let selectedPollutant = 'pm2_5';
-	let startDate = '2024-01-01';
-	let endDate = simulateCurrentTime().toISOString().split('T')[0];
-	let selectedDateRange = 'now';
-	let showRealTimeOnly = true;
-	let selectedStakeholder = 'public';
-	let mapComponent: MapComponent;
-	let isLoading = true;
-	let currentTime = new Date();
-	let locationMessage = '';
-	let isManualSelection = false;
-	let locationName = 'Your Area';
-	let calendarSelectedYear: number = new Date().getFullYear();
-	let calendarSelectedPollutant = 'overall_aqi';
-	let headerBackgroundStyle = 'background: linear-gradient(135deg, #2563eb 0%, #16a34a 50%, #2563eb 100%)'; // Default gradient
-	let visibleStations: Station[] = [];
-	let filterMetadata = {
+	let allData = $state<AirQualityReading[]>([]);
+	let filteredData = $state<AirQualityReading[]>([]);
+	let stations = $state<Station[]>([]);
+	let latestReadings = $state<AirQualityReading[]>([]);
+	let userLocation = $state<UserLocation | null>(null);
+	let nearestStation = $state<Station | null>(null);
+	let selectedStation = $state<Station | null>(null);
+	let selectedCity = $state('');
+	let selectedPollutant = $state('pm2_5');
+	let startDate = $state('2024-01-01');
+	let endDate = $state(simulateCurrentTime().toISOString().split('T')[0]);
+	let selectedDateRange = $state('now');
+	let showRealTimeOnly = $state(true);
+	let selectedStakeholder = $state('public');
+	let mapComponent = $state<MapComponent>();
+	let isLoading = $state(true);
+	let currentTime = $state(new Date());
+	let locationMessage = $state('');
+	let isManualSelection = $state(false);
+	let locationName = $state('Your Area');
+	let calendarSelectedYear = $state<number>(new Date().getFullYear());
+	let calendarSelectedPollutant = $state('overall_aqi');
+	let headerBackgroundStyle = $state('background: linear-gradient(135deg, #2563eb 0%, #16a34a 50%, #2563eb 100%)'); // Default gradient
+	let visibleStations = $state<Station[]>([]);
+	let filterMetadata = $state({
 		availableCities: [] as string[],
 		availableStations: [] as string[],
 		dateRange: { min: new Date(), max: new Date() },
 		totalRecords: 0,
 		filtersApplied: [] as string[]
-	};
+	});
 
 	onMount(async () => {
 		// Load location first
@@ -85,30 +84,13 @@
 		filteredData = currentData;
 		visibleStations = stations; // Initialize with all stations
 		
-		// Find nearest station and get reading
+		// Find nearest station (reading will be calculated automatically via derived values)
 		if (userLocation && stations.length > 0) {
 			nearestStation = findNearestStation(userLocation, stations);
-			if (nearestStation) {
-				currentReading = getStationReading(nearestStation, latestReadings);
-				if (currentReading) {
-					locationMessage = getLocationBasedMessage(
-						currentReading.overall_aqi,
-						currentReading.overall_rating,
-						selectedStakeholder
-					);
-				}
-			}
+			// currentReading and locationMessage will be set automatically via derived/effect values
 		}
 		
-		// Fallback to overall data if no location-specific data
-		if (!currentReading && latestReadings.length > 0) {
-			currentReading = latestReadings[0];
-			locationMessage = getLocationBasedMessage(
-				currentReading.overall_aqi,
-				currentReading.overall_rating,
-				selectedStakeholder
-			);
-		}
+		// Note: currentReading and locationMessage are now handled automatically via derived/effect values
 		
 		// Auto-select station based on detected location
 		if (nearestStation) {
@@ -125,7 +107,7 @@
 	});
 
 	// Auto-adjust calendar year if not available for selected filters
-	$: {
+	$effect(() => {
 		// Get available years for current filters
 		let baseData = getDataUpToCurrentTime(allData);
 		
@@ -139,10 +121,10 @@
 		if (availableYears.length > 0 && !availableYears.includes(calendarSelectedYear)) {
 			calendarSelectedYear = Math.max(...availableYears);
 		}
-	}
+	});
 
 	// Smart cross-filtering with auto-detection and dependency management
-	$: {
+	$effect(() => {
 		if (allData.length > 0) {
 			let filtered = getDataUpToCurrentTime(allData);
 			let availableCities = new Set<string>();
@@ -300,16 +282,16 @@
 				]
 			};
 		}
-	}
+	});
 
 	// Calculate overall air quality status
-	$: activeStation = selectedStation || nearestStation;
-	$: currentReading = activeStation ? getStationReading(activeStation, latestReadings) : null;
-	$: overallAQI = currentReading?.overall_aqi || 0;
-	$: overallRating = currentReading?.overall_rating || 'Good';
+	const activeStation = $derived(selectedStation || nearestStation);
+	const currentReading = $derived(activeStation ? getStationReading(activeStation, latestReadings) : null);
+	const overallAQI = $derived(currentReading?.overall_aqi || 0);
+	const overallRating = $derived(currentReading?.overall_rating || 'Good');
 	
 	// Update header background and location name based on selected location
-	$: {
+	$effect(() => {
 		if (activeStation) {
 			locationName = `${CITY_INFO[activeStation.city]?.displayName || activeStation.city} - ${activeStation.name}`;
 			const country = CITY_INFO[activeStation.city]?.country;
@@ -322,16 +304,18 @@
 			locationName = 'All Cities';
 			headerBackgroundStyle = 'background: linear-gradient(135deg, #2563eb 0%, #16a34a 50%, #2563eb 100%)';
 		}
-	}
+	});
 	
 	// Update location message when stakeholder changes
-	$: if (currentReading) {
-		locationMessage = getLocationBasedMessage(
-			currentReading.overall_aqi,
-			currentReading.overall_rating,
-			selectedStakeholder
-		);
-	}
+	$effect(() => {
+		if (currentReading) {
+			locationMessage = getLocationBasedMessage(
+				currentReading.overall_aqi,
+				currentReading.overall_rating,
+				selectedStakeholder
+			);
+		}
+	});
 	
 	// Station selection handler
 	function selectStation(station: Station) {
@@ -350,12 +334,17 @@
 	
 	// Handle visible stations change from map
 	function handleVisibleStationsChange(newVisibleStations: Station[]) {
+		console.log(`Received visible stations update: ${newVisibleStations.length} stations`);
+		
 		// Avoid unnecessary updates if stations are the same
 		const currentIds = visibleStations.map(s => s.id).sort().join(',');
 		const newIds = newVisibleStations.map(s => s.id).sort().join(',');
 		
 		if (currentIds !== newIds) {
+			console.log(`Updating visible stations from ${visibleStations.length} to ${newVisibleStations.length}`);
 			visibleStations = newVisibleStations;
+		} else {
+			console.log('Visible stations unchanged, skipping update');
 		}
 	}
 	
@@ -376,17 +365,7 @@
 					console.log('Found nearest station to user location:', nearest.name);
 					nearestStation = nearest;
 					selectedStation = nearest;
-					
-					// Update reading and message
-					const reading = getStationReading(nearest, latestReadings);
-					if (reading) {
-						currentReading = reading;
-						locationMessage = getLocationBasedMessage(
-							reading.overall_aqi,
-							reading.overall_rating,
-							selectedStakeholder
-						);
-					}
+					// currentReading and locationMessage will be updated automatically via derived/effect values
 				}
 			}
 		}
@@ -395,6 +374,12 @@
 	// Filter event handlers
 	function handleCityChange(event: CustomEvent<string>) {
 		selectedCity = event.detail;
+		// Clear selected station when city changes
+		selectedStation = null;
+		isManualSelection = false;
+		
+		console.log(`City changed to: ${selectedCity}, cleared selected station`);
+		
 		// Fly to city when selected
 		if (mapComponent && selectedCity) {
 			mapComponent.flyToCity(selectedCity);
@@ -532,6 +517,24 @@
 		}).sort((a, b) => b.aqi - a.aqi);
 	}
 	
+	// Smart station filtering: prioritize FilterBar selections over bbox filtering (reactive)
+	const displayStations = $derived.by(() => {
+		if (selectedCity) {
+			// If a city is selected via FilterBar, show only stations from that city
+			const cityStations = stations.filter(s => s.city === selectedCity);
+			console.log(`Showing stations for selected city: ${selectedCity} (${cityStations.length} stations)`);
+			return cityStations;
+		} else if (selectedStation && !selectedCity) {
+			// If a specific station is selected (but no city filter), show just that station
+			console.log(`Showing selected station: ${selectedStation.name}`);
+			return [selectedStation];
+		} else {
+			// No FilterBar selection - use bbox filtering from map viewport
+			console.log(`Showing bbox filtered stations: ${visibleStations.length}/${stations.length}`);
+			return visibleStations;
+		}
+	});
+
 	function getStationsByCity(stationsToGroup: Station[] = stations) {
 		const cityGroups: Record<string, {station: Station, reading: AirQualityReading}[]> = {};
 		
@@ -723,7 +726,7 @@
 									{#if isManualSelection}
 										<button 
 											class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition-colors"
-											on:click={resetToUserLocation}
+											onclick={resetToUserLocation}
 										>
 											🏠 Return to my location
 										</button>
@@ -759,7 +762,7 @@
 							<div class="grid grid-cols-2 gap-3">
 								<button 
 									class="p-3 text-left rounded-lg border-2 transition-all duration-200 {selectedStakeholder === 'public' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 hover:border-gray-300'}"
-									on:click={() => selectedStakeholder = 'public'}
+									onclick={() => selectedStakeholder = 'public'}
 								>
 									<div class="text-2xl mb-1">👥</div>
 									<div class="font-medium">Public</div>
@@ -767,7 +770,7 @@
 								</button>
 								<button 
 									class="p-3 text-left rounded-lg border-2 transition-all duration-200 {selectedStakeholder === 'government' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 hover:border-gray-300'}"
-									on:click={() => selectedStakeholder = 'government'}
+									onclick={() => selectedStakeholder = 'government'}
 								>
 									<div class="text-2xl mb-1">🏢</div>
 									<div class="font-medium">Government</div>
@@ -841,7 +844,7 @@
 					})()} 
 					selectedStation={activeStation}
 					title="Air Quality Calendar View"
-					stationName="{activeStation ? activeStation.name : 'All Cities'}"
+					stationName={activeStation ? activeStation.name : 'All Cities'}
 					availableYears={(() => {
 						// Use same filtering logic for available years
 						let baseData = getDataUpToCurrentTime(allData);
@@ -910,18 +913,26 @@
 									🌆 Monitoring Stations
 								</h3>
 								<div class="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
-									{visibleStations.length > 0 ? `${visibleStations.length} in view` : 'Pan map'}
+									{#if selectedCity}
+										{displayStations.length} in {CITY_INFO[selectedCity]?.displayName || selectedCity}
+									{:else}
+										{displayStations.length > 0 ? `${displayStations.length} in view` : 'Pan map'}
+									{/if}
 								</div>
 							</div>
 						</div>
 						
 						<div class="flex-1 overflow-y-auto p-4">
-							{#if visibleStations.length === 0}
+							{#if displayStations.length === 0}
 								<div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-									<p class="text-blue-800 text-sm">📍 Zoom in or pan the map to see stations in that area</p>
+									{#if selectedCity}
+										<p class="text-blue-800 text-sm">🏙️ No stations found in {CITY_INFO[selectedCity]?.displayName || selectedCity}</p>
+									{:else}
+										<p class="text-blue-800 text-sm">📍 Zoom in or pan the map to see stations in that area</p>
+									{/if}
 								</div>
 							{:else}
-								{#each getStationsByCity(visibleStations) as cityGroup}
+								{#each getStationsByCity(displayStations) as cityGroup}
 									<div class="mb-6">
 										<h4 class="text-sm font-medium text-gray-700 mb-3 flex items-center space-x-2 sticky top-0 bg-white py-2">
 											<span>{cityGroup.emoji}</span>
@@ -932,7 +943,7 @@
 											{#each cityGroup.stations as stationData}
 												<button 
 													class="w-full text-left bg-white rounded-lg p-3 shadow-sm border transition-all duration-200 {activeStation?.id === stationData.station.id ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' : 'border-gray-200 hover:border-gray-300 hover:shadow-md'}"
-													on:click={() => selectStation(stationData.station)}
+													onclick={() => selectStation(stationData.station)}
 												>
 													<div class="flex items-center justify-between">
 														<div class="flex items-center space-x-3">

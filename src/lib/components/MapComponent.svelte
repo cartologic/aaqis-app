@@ -201,6 +201,7 @@
 
 	// Manual function to trigger bounds recalculation
 	function updateVisibleStations() {
+		console.log('updateVisibleStations called, incrementing bounds change trigger');
 		mapBoundsChanged++;
 	}
 
@@ -227,9 +228,25 @@
 		
 		// Add map event listeners to update visible stations
 		if (map) {
-			map.on('moveend', updateVisibleStations);
-			map.on('zoomend', updateVisibleStations);
-			map.on('dragend', updateVisibleStations);
+			console.log('Adding map event listeners for bbox filtering');
+			map.on('moveend', () => {
+				console.log('Map moveend - updating visible stations');
+				updateVisibleStations();
+			});
+			map.on('zoomend', () => {
+				console.log('Map zoomend - updating visible stations');
+				updateVisibleStations();
+			});
+			map.on('dragend', () => {
+				console.log('Map dragend - updating visible stations');
+				updateVisibleStations();
+			});
+			
+			// Also listen to idle event for comprehensive coverage
+			map.on('idle', () => {
+				console.log('Map idle - updating visible stations');
+				updateVisibleStations();
+			});
 		}
 		
 		// Initial update
