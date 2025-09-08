@@ -5,7 +5,8 @@
 		CircleLayer,
 		Marker,
 		Popup,
-		QueryRenderedFeatures
+		QueryRenderedFeatures,
+		GeolocateControl
 	} from 'svelte-maplibre-gl';
 	import maplibregl from 'maplibre-gl';
 	import type { Map, MapGeoJSONFeature } from 'maplibre-gl';
@@ -20,6 +21,7 @@
 		selectedCity?: string;
 		onStationSelect?: (station: Station) => void;
 		onVisibleStationsChange?: (stations: Station[]) => void;
+		onUserLocationChange?: (location: {lng: number, lat: number} | null) => void;
 	}
 
 	let { 
@@ -28,7 +30,8 @@
 		selectedStation = null,
 		selectedCity = '',
 		onStationSelect = () => {},
-		onVisibleStationsChange = () => {}
+		onVisibleStationsChange = () => {},
+		onUserLocationChange = () => {}
 	}: Props = $props();
 
 	// Debug logging
@@ -57,6 +60,7 @@
 	let zoom = $state(4);
 	let pitch = $state(0);
 	let bearing = $state(0);
+	let userLocation = $state<{lng: number, lat: number} | null>(null);
 
 	// Export methods for parent component
 	export function flyToStation(station: Station) {
@@ -286,6 +290,42 @@
 			.replace(/_/g, ' ')
 			.replace(/\b\w/g, l => l.toUpperCase());
 	}
+
+	// Geolocation handlers
+	function handleGeolocate(event: any) {
+		console.log('User location found:', event.coords);
+		userLocation = {
+			lng: event.coords.longitude,
+			lat: event.coords.latitude
+		};
+		
+		// Auto fly to user location if no station is selected
+		if (map && !selectedStation) {
+			map.flyTo({
+				center: [event.coords.longitude, event.coords.latitude],
+				zoom: 12,
+				duration: 2000
+			});
+		}
+		
+		// Notify parent component about user location for nearest station finding
+		if (onUserLocationChange) {
+			onUserLocationChange(userLocation);
+		}
+		
+		// Trigger a bounds update to potentially find nearest stations
+		setTimeout(() => {
+			mapBoundsUpdateTrigger++;
+		}, 100);
+	}
+
+	function handleTrackUserLocationStart() {
+		console.log('Started tracking user location');
+	}
+
+	function handleTrackUserLocationEnd() {
+		console.log('Stopped tracking user location');
+	}
 </script>
 
 <div bind:this={mapContainer} class="h-full w-full relative">
@@ -294,6 +334,11 @@
 		<div>Center: {center[1].toFixed(3)}, {center[0].toFixed(3)}</div>
 		<div>Zoom: {zoom.toFixed(1)} | Stations: {stations.length}</div>
 		<div>Visible: {visibleStations.length} | Map: {map ? 'Ready' : 'Loading'}</div>
+		{#if userLocation}
+			<div>User: {userLocation.lat.toFixed(3)}, {userLocation.lng.toFixed(3)}</div>
+		{:else}
+			<div>User: Not located</div>
+		{/if}
 	</div>
 	<MapLibre
 		style="https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
@@ -349,6 +394,19 @@
 		{/each}
 		
 		{#if isMapReady}
+			<!-- Geolocation Control -->
+			<GeolocateControl
+				position="top-right"
+				positionOptions={{ enableHighAccuracy: true, timeout: 6000 }}
+				trackUserLocation={true}
+				showAccuracyCircle={true}
+				showUserLocation={true}
+				fitBoundsOptions={{ maxZoom: 15 }}
+				ongeolocate={handleGeolocate}
+				ontrackuserlocationstart={handleTrackUserLocationStart}
+				ontrackuserlocationend={handleTrackUserLocationEnd}
+			/>
+
 			<!-- GeoJSON source with all stations -->
 			<GeoJSONSource
 				id="stations"

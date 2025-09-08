@@ -350,7 +350,42 @@
 	
 	// Handle visible stations change from map
 	function handleVisibleStationsChange(newVisibleStations: Station[]) {
+		console.log('handleVisibleStationsChange called with:', newVisibleStations.length, 'stations');
 		visibleStations = newVisibleStations;
+		console.log('visibleStations updated to:', visibleStations.length);
+	}
+	
+	// Handle user location change from map geolocation
+	function handleUserLocationChange(location: {lng: number, lat: number} | null) {
+		console.log('User location from map:', location);
+		if (location) {
+			// Create a UserLocation object
+			const newUserLocation = {
+				latitude: location.lat,
+				longitude: location.lng
+			};
+			
+			// Find nearest station and update selection if no manual selection
+			if (stations.length > 0 && !isManualSelection) {
+				const nearest = findNearestStation(newUserLocation, stations);
+				if (nearest) {
+					console.log('Found nearest station to user location:', nearest.name);
+					nearestStation = nearest;
+					selectedStation = nearest;
+					
+					// Update reading and message
+					const reading = getStationReading(nearest, latestReadings);
+					if (reading) {
+						currentReading = reading;
+						locationMessage = getLocationBasedMessage(
+							reading.overall_aqi,
+							reading.overall_rating,
+							selectedStakeholder
+						);
+					}
+				}
+			}
+		}
 	}
 	
 	// Filter event handlers
@@ -837,93 +872,93 @@
 					Click any station on the map or in the list to view its real-time data
 				</p>
 				
-				<div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
-					<!-- Map -->
-					<div class="xl:col-span-2">
-						<div class="bg-gray-50 rounded-xl overflow-hidden shadow-lg h-full flex flex-col">
-							<div class="p-4 bg-white border-b">
-								<h3 class="text-lg font-semibold text-gray-800">
-									Map View
-								</h3>
-								<p class="text-sm text-gray-600 mt-1">
-									Interactive air quality map
-								</p>
-							</div>
-							<div class="h-96 md:h-[500px]">
-								<MapComponent 
-									bind:this={mapComponent}
-									{stations} 
-									{latestReadings} 
-									selectedStation={activeStation}
-									{selectedCity}
-									onStationSelect={selectStation}
-									onVisibleStationsChange={handleVisibleStationsChange}
-								/>
-							</div>
+				<!-- Responsive Layout: Stack on mobile, Side-by-side on desktop -->
+				<div class="flex flex-col lg:flex-row gap-4">
+					<!-- Map Container - Full width on mobile, grows to fill space on desktop -->
+					<div class="flex-1 bg-gray-50 rounded-xl overflow-hidden shadow-lg">
+						<div class="p-4 bg-white border-b">
+							<h3 class="text-lg font-semibold text-gray-800">
+								Map View
+							</h3>
+							<p class="text-sm text-gray-600 mt-1">
+								Interactive air quality map
+							</p>
+						</div>
+						<div class="h-[400px] sm:h-[500px] lg:h-[600px]">
+							<MapComponent 
+								bind:this={mapComponent}
+								{stations} 
+								{latestReadings} 
+								selectedStation={activeStation}
+								{selectedCity}
+								onStationSelect={selectStation}
+								onVisibleStationsChange={handleVisibleStationsChange}
+								onUserLocationChange={handleUserLocationChange}
+							/>
 						</div>
 					</div>
 					
-					<!-- City Statistics and Station Selection -->
-					<div class="space-y-4 h-full flex flex-col">
-						<div class="flex items-center justify-between">
-							<h3 class="text-lg font-semibold text-gray-800">
-								🌆 Monitoring Stations
-							</h3>
-							<div class="text-xs text-gray-600">
-								{visibleStations.length > 0 ? `${visibleStations.length} stations in view` : 'Pan map to see stations'}
+					<!-- Sidebar Panel - Bottom on mobile, Right side on desktop -->
+					<div class="w-full lg:w-80 xl:w-96 bg-white rounded-xl shadow-lg flex flex-col h-[400px] lg:h-[600px]">
+						<div class="p-4 border-b bg-white rounded-t-xl">
+							<div class="flex items-center justify-between">
+								<h3 class="text-lg font-semibold text-gray-800">
+									🌆 Monitoring Stations
+								</h3>
+								<div class="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
+									{visibleStations.length > 0 ? `${visibleStations.length} in view` : 'Pan map'}
+								</div>
 							</div>
 						</div>
 						
-						<div class="flex-grow overflow-hidden bg-white rounded-xl shadow-lg">
-							<div class="h-full overflow-y-auto p-4">
-								{#if visibleStations.length === 0}
-									<div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-										<p class="text-blue-800">📍 Zoom in or pan the map to see stations in that area</p>
-									</div>
-								{:else}
-									{#each getStationsByCity(visibleStations) as cityGroup}
-										<div class="mb-4">
-											<h4 class="text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
-												<span>{cityGroup.emoji}</span>
-												<span>{cityGroup.name}</span>
-												<span class="text-xs bg-gray-100 px-2 py-1 rounded">{cityGroup.stations.length}</span>
-											</h4>
-											<div class="space-y-2">
-												{#each cityGroup.stations as stationData}
-													<button 
-														class="w-full text-left bg-white rounded-lg p-3 shadow-sm border transition-all duration-200 {activeStation?.id === stationData.station.id ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' : 'border-gray-200 hover:border-gray-300 hover:shadow-md'}"
-														on:click={() => selectStation(stationData.station)}
-													>
-														<div class="flex items-center justify-between">
-															<div class="flex items-center space-x-3">
-																<div class="text-xl">{getAQIEmoji(stationData.reading.overall_rating)}</div>
-																<div>
-																	<div class="font-medium text-gray-800">
-																		{stationData.station.name.replace('Station', '').trim()}
-																	</div>
-																	<div class="text-xs text-gray-600">{stationData.station.id}</div>
+						<div class="flex-1 overflow-y-auto p-4">
+							{#if visibleStations.length === 0}
+								<div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+									<p class="text-blue-800 text-sm">📍 Zoom in or pan the map to see stations in that area</p>
+								</div>
+							{:else}
+								{#each getStationsByCity(visibleStations) as cityGroup}
+									<div class="mb-6">
+										<h4 class="text-sm font-medium text-gray-700 mb-3 flex items-center space-x-2 sticky top-0 bg-white py-2">
+											<span>{cityGroup.emoji}</span>
+											<span>{cityGroup.name}</span>
+											<span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">{cityGroup.stations.length}</span>
+										</h4>
+										<div class="space-y-3">
+											{#each cityGroup.stations as stationData}
+												<button 
+													class="w-full text-left bg-white rounded-lg p-3 shadow-sm border transition-all duration-200 {activeStation?.id === stationData.station.id ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' : 'border-gray-200 hover:border-gray-300 hover:shadow-md'}"
+													on:click={() => selectStation(stationData.station)}
+												>
+													<div class="flex items-center justify-between">
+														<div class="flex items-center space-x-3">
+															<div class="text-xl">{getAQIEmoji(stationData.reading.overall_rating)}</div>
+															<div class="min-w-0 flex-1">
+																<div class="font-medium text-gray-800 truncate">
+																	{stationData.station.name.replace('Station', '').trim()}
 																</div>
-															</div>
-															<div class="text-right">
-																<div class="text-lg font-bold" style="color: {getAQIColor(stationData.reading.overall_aqi)}">
-																	{Math.round(stationData.reading.overall_aqi)}
-																</div>
-																<div class="text-xs text-gray-600">AQI</div>
+																<div class="text-xs text-gray-600">{stationData.station.id}</div>
 															</div>
 														</div>
-														<div class="mt-2 text-xs text-gray-600">
-															<div class="flex justify-between">
-																<span>PM2.5: {stationData.reading.pm2_5.toFixed(1)} μg/m³</span>
-																<span>{formatRating(stationData.reading.overall_rating)}</span>
+														<div class="text-right ml-2">
+															<div class="text-lg font-bold" style="color: {getAQIColor(stationData.reading.overall_aqi)}">
+																{Math.round(stationData.reading.overall_aqi)}
 															</div>
+															<div class="text-xs text-gray-600">AQI</div>
 														</div>
-													</button>
-												{/each}
-											</div>
+													</div>
+													<div class="mt-2 text-xs text-gray-600">
+														<div class="flex justify-between">
+															<span>PM2.5: {stationData.reading.pm2_5.toFixed(1)} μg/m³</span>
+															<span class="font-medium">{formatRating(stationData.reading.overall_rating)}</span>
+														</div>
+													</div>
+												</button>
+											{/each}
 										</div>
-									{/each}
-								{/if}
-							</div>
+									</div>
+								{/each}
+							{/if}
 						</div>
 					</div>
 				</div>
