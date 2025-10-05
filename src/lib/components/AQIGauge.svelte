@@ -6,17 +6,28 @@
 	export let size: number = 200;
 
 	let showTooltip = false;
-
+	let containerWidth = 0;
 	let canvasElement: HTMLCanvasElement;
+	let isMounted = false;
 
 	$: strokeColor = getAQIColor(aqi);
 	$: emoji = getAQIEmoji(rating);
+	// Responsive size: use containerWidth if available, otherwise use size prop
+	// Max size is 400px on desktop
+	$: responsiveSize = containerWidth > 0 ? Math.min(containerWidth * 0.9, 400) : size;
 
 	onMount(() => {
-		drawGauge();
+		isMounted = true;
+		// Small delay to ensure containerWidth is measured
+		setTimeout(() => {
+			if (canvasElement) {
+				drawGauge();
+			}
+		}, 50);
 	});
 
-	$: if (canvasElement && aqi >= 0) {
+	// Redraw when any reactive values change
+	$: if (isMounted && canvasElement && responsiveSize > 0) {
 		drawGauge();
 	}
 
@@ -56,17 +67,18 @@
 		const ctx = canvasElement.getContext('2d');
 		if (!ctx) return;
 
-		const centerX = size / 2;
-		const centerY = size / 2;
-		const radius = size / 2 - 20;
+		const currentSize = responsiveSize;
+		const centerX = currentSize / 2;
+		const centerY = currentSize / 2;
+		const radius = currentSize / 2 - 30;
 
 		// Clear canvas
-		ctx.clearRect(0, 0, size, size);
+		ctx.clearRect(0, 0, currentSize, currentSize);
 
 		// Draw background arc
 		ctx.beginPath();
 		ctx.arc(centerX, centerY, radius, Math.PI, 2 * Math.PI);
-		ctx.lineWidth = 20;
+		ctx.lineWidth = Math.max(20, currentSize * 0.06);
 		ctx.strokeStyle = '#e5e7eb';
 		ctx.lineCap = 'round';
 		ctx.stroke();
@@ -79,55 +91,76 @@
 		// Draw progress arc
 		ctx.beginPath();
 		ctx.arc(centerX, centerY, radius, Math.PI, endAngle);
-		ctx.lineWidth = 20;
+		ctx.lineWidth = Math.max(20, currentSize * 0.06);
 		ctx.strokeStyle = strokeColor;
 		ctx.lineCap = 'round';
 		ctx.stroke();
 
 		// Draw center circle
 		ctx.beginPath();
-		ctx.arc(centerX, centerY, radius - 40, 0, 2 * Math.PI);
+		ctx.arc(centerX, centerY, radius - Math.max(50, currentSize * 0.15), 0, 2 * Math.PI);
 		ctx.fillStyle = 'white';
 		ctx.fill();
 
-		// Draw AQI text
-		ctx.fillStyle = '#374151';
-		ctx.font = 'bold 24px Ubuntu, sans-serif';
-		ctx.textAlign = 'center';
-		ctx.fillText(aqi.toString(), centerX, centerY - 10);
+		// Responsive font sizes
+		const numberFontSize = Math.max(32, currentSize * 0.18);
+		const labelFontSize = Math.max(14, currentSize * 0.07);
 
-		// Draw rating text
+		// Draw AQI number - centered vertically
+		ctx.fillStyle = '#1f2937';
+		ctx.font = `bold ${numberFontSize}px Ubuntu, Inter, sans-serif`;
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'middle';
+		ctx.fillText(aqi.toString(), centerX, centerY - numberFontSize * 0.15);
+
+		// Draw "AQI" label below the number
 		ctx.fillStyle = '#6b7280';
-		ctx.font = '14px Ubuntu, sans-serif';
-		ctx.fillText('AQI', centerX, centerY + 15);
+		ctx.font = `600 ${labelFontSize}px Ubuntu, Inter, sans-serif`;
+		ctx.textBaseline = 'top';
+		ctx.fillText('AQI', centerX, centerY + numberFontSize * 0.35);
 	}
 </script>
 
-<div class="flex flex-col items-center">
-	<div class="relative">
-		<canvas bind:this={canvasElement} width={size} height={size} class="drop-shadow-lg"></canvas>
+<div class="flex flex-col items-center w-full" bind:clientWidth={containerWidth}>
+	{#if responsiveSize > 0}
+		<div class="relative flex justify-center items-center" style="min-height: {responsiveSize}px;">
+			<canvas
+				bind:this={canvasElement}
+				width={responsiveSize}
+				height={responsiveSize}
+				class="drop-shadow-xl"
+			></canvas>
 
-		<!-- Emoji overlay -->
-		<div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-4xl mt-8">
-			{emoji}
+			<!-- Emoji overlay - positioned at the bottom of the gauge -->
+			<div
+				class="absolute left-1/2 transform -translate-x-1/2 pointer-events-none"
+				style="top: {responsiveSize * 0.75}px; font-size: {Math.max(32, responsiveSize * 0.15)}px; line-height: 1;"
+			>
+				{emoji}
+			</div>
 		</div>
-	</div>
+	{:else}
+		<!-- Loading placeholder with fixed size from prop -->
+		<div class="relative flex justify-center items-center" style="min-height: {size}px; width: {size}px;">
+			<div class="animate-pulse bg-gray-200 rounded-full" style="width: {size}px; height: {size}px;"></div>
+		</div>
+	{/if}
 
 	<!-- Rating label with info tooltip -->
-	<div class="mt-4 text-center relative">
-		<div class="text-xl font-bold" style="color: {strokeColor}">
+	<div class="mt-6 text-center relative w-full">
+		<div class="text-2xl md:text-3xl font-bold mb-2" style="color: {strokeColor}">
 			{rating}
 		</div>
-		<div class="text-sm text-gray-600 mt-1 flex items-center justify-center gap-2">
+		<div class="text-sm md:text-base text-gray-600 flex items-center justify-center gap-2">
 			<span>Air Quality Index</span>
 			<button
-				class="text-blue-500 hover:text-blue-600 text-xs font-bold border border-blue-500 rounded-full w-4 h-4 flex items-center justify-center"
+				class="text-blue-500 hover:text-blue-600 text-xs font-bold border border-blue-500 rounded-full w-5 h-5 flex items-center justify-center transition-colors"
 				on:mouseenter={() => (showTooltip = true)}
 				on:mouseleave={() => (showTooltip = false)}
 				on:focus={() => (showTooltip = true)}
 				on:blur={() => (showTooltip = false)}
 			>
-				!
+				i
 			</button>
 		</div>
 

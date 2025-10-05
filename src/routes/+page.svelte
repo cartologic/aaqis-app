@@ -777,15 +777,15 @@
 		<!-- Hero Section with AQI Gauge -->
 		<section class="py-12">
 			<div class="container mx-auto px-4">
-				<div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-					<!-- AQI Gauge -->
-					<div class="text-center lg:text-left">
-						<h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-6">
+				<div class="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-12 items-center">
+					<!-- AQI Gauge - Takes 3 columns (golden ratio ~60%) -->
+					<div class="lg:col-span-3 flex flex-col items-center justify-center">
+						<h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-8 text-center">
 							Air Quality in <span class="text-blue-600">{locationName}</span>
 						</h2>
 
-						<div class="flex justify-center lg:justify-start mb-8">
-							<AQIGauge aqi={Math.round(overallAQI)} rating={formatRating(overallRating)} size={200} />
+						<div class="flex justify-center mb-8 w-full max-w-md">
+							<AQIGauge aqi={Math.round(overallAQI)} rating={formatRating(overallRating)} size={280} />
 						</div>
 
 						<!-- Station Info Card -->
@@ -830,12 +830,12 @@
 						{/if}
 					</div>
 
-					<!-- Health Message -->
-					<div class="space-y-6">
+					<!-- Health Message - Takes 2 columns (golden ratio ~40%) -->
+					<div class="lg:col-span-2 space-y-6">
 						<!-- Stakeholder Selection -->
 						<div class="bg-white rounded-xl p-6 shadow-lg">
 							<h3 class="text-lg font-semibold text-gray-800 mb-4">🎯 Choose Your Role</h3>
-							<div class="grid grid-cols-2 gap-3">
+							<div class="grid grid-cols-3 gap-3">
 								<button
 									class="p-3 text-left rounded-lg border-2 transition-all duration-200 {selectedStakeholder === 'public'
 										? 'border-blue-500 bg-blue-50 text-blue-700'
@@ -849,7 +849,7 @@
 									}}
 								>
 									<div class="text-2xl mb-1">👥</div>
-									<div class="font-medium">Public</div>
+									<div class="font-medium text-sm">Public</div>
 									<div class="text-xs opacity-75">General citizen</div>
 								</button>
 								<button
@@ -866,8 +866,25 @@
 									}}
 								>
 									<div class="text-2xl mb-1">🏢</div>
-									<div class="font-medium">Government</div>
+									<div class="font-medium text-sm">Government</div>
 									<div class="text-xs opacity-75">Policy maker</div>
+								</button>
+								<button
+									class="p-3 text-left rounded-lg border-2 transition-all duration-200 {selectedStakeholder ===
+									'practitioners'
+										? 'border-blue-500 bg-blue-50 text-blue-700'
+										: 'border-gray-200 hover:border-gray-300'}"
+									onclick={() => {
+										const prevStakeholder = selectedStakeholder;
+										selectedStakeholder = 'practitioners';
+										if (prevStakeholder !== 'practitioners') {
+											aaqisAnalytics.trackStakeholderSwitch(prevStakeholder, 'practitioners');
+										}
+									}}
+								>
+									<div class="text-2xl mb-1">🔬</div>
+									<div class="font-medium text-sm">Practitioners</div>
+									<div class="text-xs opacity-75">Technical experts</div>
 								</button>
 							</div>
 						</div>
@@ -881,7 +898,11 @@
 									</div>
 									<div class="flex-1">
 										<h3 class="text-lg font-semibold text-gray-800 mb-3">
-											Advice for {selectedStakeholder === 'public' ? 'You' : 'Policy Makers'}
+											Advice for {selectedStakeholder === 'public'
+												? 'You'
+												: selectedStakeholder === 'government'
+													? 'Policy Makers'
+													: 'Technical Experts'}
 										</h3>
 										<p class="text-gray-700 leading-relaxed">
 											{locationMessage}
