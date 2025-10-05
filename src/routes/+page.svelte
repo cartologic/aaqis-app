@@ -1099,5 +1099,59 @@
 				</div>
 			</div>
 		</section>
+
+		<!-- Footer with Partner Logos -->
+		<footer class="bg-gradient-to-r from-blue-900 via-blue-800 to-green-900 text-white py-8 mt-12">
+			<div class="container mx-auto px-4">
+				<div class="flex flex-col md:flex-row items-center justify-between gap-6">
+					<!-- Left side - App info -->
+					<div class="text-center md:text-left">
+						<h3 class="text-xl font-bold mb-2">AAQIS</h3>
+						<p class="text-blue-200 text-sm max-w-md">
+							Africa Air Quality Information System - Empowering communities with actionable air quality information
+						</p>
+					</div>
+
+					<!-- Center - Partner Logos -->
+					<div class="flex flex-col items-center gap-4">
+						<p class="text-blue-200 text-sm font-medium">Partners & Supporters</p>
+						<div class="flex items-center gap-8">
+							<a
+								href="https://www.cedare.int/"
+								target="_blank"
+								rel="noopener noreferrer"
+								class="hover:opacity-80 transition-opacity"
+								aria-label="CEDARE - Centre for Environment and Development for the Arab Region and Europe"
+							>
+								<img
+									src="/images/logos/CEDARE_White.png"
+									alt="CEDARE Logo"
+									class="h-12 md:h-16 w-auto object-contain"
+								/>
+							</a>
+							<a
+								href="https://www.unep.org/"
+								target="_blank"
+								rel="noopener noreferrer"
+								class="hover:opacity-80 transition-opacity"
+								aria-label="UNEP - United Nations Environment Programme"
+							>
+								<img
+									src="/images/logos/UNEP_White.png"
+									alt="UNEP Logo"
+									class="h-12 md:h-16 w-auto object-contain"
+								/>
+							</a>
+						</div>
+					</div>
+
+					<!-- Right side - Copyright -->
+					<div class="text-center md:text-right text-sm text-blue-200">
+						<p>&copy; {new Date().getFullYear()} AAQIS</p>
+						<p class="mt-1">All rights reserved</p>
+					</div>
+				</div>
+			</div>
+		</footer>
 	</main>
 {/if}
