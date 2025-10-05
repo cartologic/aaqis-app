@@ -777,9 +777,9 @@
 		<!-- Hero Section with AQI Gauge -->
 		<section class="py-12">
 			<div class="container mx-auto px-4">
-				<div class="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-12 items-center">
-					<!-- AQI Gauge - Takes 3 columns (golden ratio ~60%) -->
-					<div class="lg:col-span-3 flex flex-col items-center justify-center">
+				<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start">
+					<!-- AQI Gauge - Takes 1 column (50%) -->
+					<div class="flex flex-col items-center justify-center">
 						<h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-8 text-center">
 							Air Quality in <span class="text-blue-600">{locationName}</span>
 						</h2>
@@ -830,8 +830,8 @@
 						{/if}
 					</div>
 
-					<!-- Health Message - Takes 2 columns (golden ratio ~40%) -->
-					<div class="lg:col-span-2 space-y-6">
+					<!-- Health Message - Takes 1 column (50%) -->
+					<div class="space-y-6">
 						<!-- Stakeholder Selection -->
 						<div class="bg-white rounded-xl p-6 shadow-lg">
 							<h3 class="text-lg font-semibold text-gray-800 mb-4">🎯 Choose Your Role</h3>
@@ -891,12 +891,12 @@
 
 						<!-- Health Advice -->
 						{#if locationMessage}
-							<div class="bg-white rounded-xl p-6 shadow-lg">
+							<div class="bg-white rounded-xl p-6 shadow-lg overflow-hidden">
 								<div class="flex items-start space-x-4">
-									<div class="text-3xl">
+									<div class="text-3xl flex-shrink-0">
 										{getAQIEmoji(overallRating)}
 									</div>
-									<div class="flex-1">
+									<div class="flex-1 min-w-0">
 										<h3 class="text-lg font-semibold text-gray-800 mb-3">
 											Advice for {selectedStakeholder === 'public'
 												? 'You'
@@ -904,7 +904,7 @@
 													? 'Policy Makers'
 													: 'Technical Experts'}
 										</h3>
-										<p class="text-gray-700 leading-relaxed">
+										<p class="text-gray-700 leading-relaxed text-sm break-words whitespace-normal">
 											{locationMessage}
 										</p>
 									</div>

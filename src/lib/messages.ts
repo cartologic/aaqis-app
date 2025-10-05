@@ -28,11 +28,13 @@ export const AIR_QUALITY_MESSAGES: Record<AQIRating, Record<string, AirQualityMe
 			target: 'practitioners',
 			rating: 'good',
 			message:
-				'Good air quality days are a result of effective interventions. Conduct post-analysis to identify which policies and weather conditions were most impactful. Use this as a baseline to measure the effectiveness of future air pollution control strategies.',
+				'AQI within WHO guidelines (0-50). Optimal conditions for baseline studies and QA/QC verification. Conduct receptor modeling (PMF/CMB) to characterize background concentrations and identify natural vs. anthropogenic contributions. Validate monitoring equipment calibration and perform inter-comparison studies. Document meteorological conditions for future episodic analysis.',
 			recommendations: [
-				'Document successful intervention strategies',
-				'Analyze contributing factors',
-				'Establish baselines for future monitoring'
+				'Perform source apportionment baseline studies',
+				'Conduct quality assurance audits per EPA guidelines',
+				'Establish seasonal baseline profiles for comparison',
+				'Validate emission inventory assumptions',
+				'Archive high-resolution temporal data for model validation'
 			]
 		}
 	},
@@ -63,11 +65,13 @@ export const AIR_QUALITY_MESSAGES: Record<AQIRating, Record<string, AirQualityMe
 			target: 'practitioners',
 			rating: 'moderate',
 			message:
-				'Air quality is in a dynamic state. Focus on predictive modeling and forecasting to anticipate shifts towards unhealthy levels. Use this data to engage with stakeholders on emission reduction strategies.',
+				'AQI 51-100: Elevated levels detected. Initiate enhanced monitoring protocols with increased sampling frequency. Apply multivariate receptor modeling (PCA/FA) to identify emerging source contributions. Analyze diurnal patterns and meteorological correlations (wind rose analysis, mixing height). Activate forecasting models (CMAQ/WRF-Chem) for 24-48hr predictions to anticipate NAAQS exceedances.',
 			recommendations: [
-				'Enhance forecasting capabilities',
-				'Engage with emission sources',
-				'Prepare preventive measures'
+				'Implement predictive dispersion modeling (AERMOD/CALPUFF)',
+				'Conduct back-trajectory analysis (HYSPLIT) for source region identification',
+				'Increase PM2.5/PM10 speciation sampling for CMB analysis',
+				'Engage major point sources for emission verification',
+				'Prepare contingency response protocols for sensitive groups'
 			]
 		}
 	},
@@ -98,11 +102,13 @@ export const AIR_QUALITY_MESSAGES: Record<AQIRating, Record<string, AirQualityMe
 			target: 'practitioners',
 			rating: 'unhealthy_sensitive',
 			message:
-				'Elevated pollution levels detected. Investigate potential sources and patterns by analyzing real-time data streams. This is crucial time for source identification and targeted interventions.',
+				'AQI 101-150: NAAQS threshold approaching. Deploy enhanced source apportionment protocols—apply PMF with error estimation (BS-DISP) to quantify source contributions. Activate real-time emission monitoring at major point sources. Conduct urgent spatial analysis to identify hotspots and transport patterns. Initiate chemical speciation (OC/EC, ions, metals) for source fingerprinting. Coordinate with meteorology for inversion layer analysis.',
 			recommendations: [
-				'Investigate pollution sources',
-				'Implement source apportionment studies',
-				'Coordinate with relevant industries'
+				'Execute emergency CMB receptor modeling with local source profiles',
+				'Deploy mobile monitoring units for spatial characterization',
+				'Activate satellite imagery analysis (MODIS/VIIRS AOD) for regional transport',
+				'Implement conditional probability function (CPF) analysis for source directionality',
+				'Communicate findings to regulatory agencies within 6 hours'
 			]
 		}
 	},
@@ -135,11 +141,13 @@ export const AIR_QUALITY_MESSAGES: Record<AQIRating, Record<string, AirQualityMe
 			target: 'practitioners',
 			rating: 'unhealthy',
 			message:
-				'Critical air quality levels detected. Immediately investigate sources and implement emergency response protocols. Coordinate with government and industry for immediate emission reduction measures.',
+				'AQI 151-200: EMERGENCY RESPONSE REQUIRED. Episode analysis critical—execute multi-site PMF/CMB with bootstrapping for uncertainty quantification. Deploy LIDAR/ceilometer for boundary layer profiling. Initiate continuous CEMS monitoring at all permitted sources. Activate photochemical modeling (CMAQ/CAMx) for O3/PM2.5 secondary formation analysis. Implement real-time data validation (QAPP protocols) and flag suspect data immediately.',
 			recommendations: [
-				'Activate emergency response protocols',
-				'Coordinate immediate emission reductions',
-				'Provide real-time updates to authorities'
+				'Execute emergency episode forensics with 1-hour resolution',
+				'Deploy filter-based and real-time instruments (TEOM, BAM) in parallel',
+				'Coordinate with regional networks for transboundary analysis',
+				'Activate emissions inventory rapid assessment protocols',
+				'Provide hourly technical briefings to emergency management'
 			]
 		}
 	},
@@ -172,11 +180,13 @@ export const AIR_QUALITY_MESSAGES: Record<AQIRating, Record<string, AirQualityMe
 			target: 'practitioners',
 			rating: 'very_unhealthy',
 			message:
-				'Emergency air quality crisis. Coordinate with all available resources for immediate source control. Provide continuous monitoring and reporting. Implement all available emergency mitigation strategies.',
+				'AQI 201-300: CRITICAL EPISODE. Full crisis protocols—continuous receptor modeling updates every 3 hours with rotating UNMIX/PMF/CMB validation. Deploy all available monitoring assets including research-grade instruments. Activate ensemble forecasting with multiple chemical transport models. Implement backward Lagrangian particle dispersion (FLEXPART) for 72-hour source region analysis. Coordinate interstate data sharing for regional transport assessment.',
 			recommendations: [
-				'Coordinate emergency response',
-				'Continuous monitoring and reporting',
-				'Implement all mitigation strategies'
+				'Establish 24/7 technical operations center with rotating shifts',
+				'Deploy aircraft/drone measurements for vertical profiling if feasible',
+				'Execute rapid-response source testing at all major emitters (>100 tons/yr)',
+				'Activate citizen science networks for supplementary spatial coverage',
+				'Prepare peer-reviewed technical incident report for post-episode analysis'
 			]
 		}
 	},
@@ -211,12 +221,13 @@ export const AIR_QUALITY_MESSAGES: Record<AQIRating, Record<string, AirQualityMe
 			target: 'practitioners',
 			rating: 'hazardous',
 			message:
-				'CRITICAL EMERGENCY: Hazardous air quality detected. Coordinate with all emergency services. Implement every available pollution control measure. Provide continuous emergency updates and support evacuation efforts.',
+				'AQI >300: CATASTROPHIC EVENT. Implement Level 1 crisis response per National Contingency Plan. Deploy full analytical capability—synchronize multi-instrument analysis (FRM/FEM/continuous) with redundant QA/QC. Activate all modeling platforms with ensemble uncertainty analysis. Execute emergency source attribution using all available receptor models plus deterministic source-oriented methods (CMAQ-DDM, CAMx-OSAT). Document complete chain-of-custody for forensic-quality data preservation.',
 			recommendations: [
-				'Coordinate with emergency services',
-				'Implement all pollution controls',
-				'Support evacuation efforts',
-				'Provide continuous emergency updates'
+				'Establish unified command with EPA/WHO emergency response coordinators',
+				'Deploy Level 4 PPE for field personnel conducting emergency sampling',
+				'Execute emergency health impact modeling (BenMAP/APEEP) for epidemiological support',
+				'Coordinate with satellite programs (Sentinel-5P/TROPOMI) for regional context',
+				'Prepare comprehensive technical brief for international scientific community and media'
 			]
 		}
 	}

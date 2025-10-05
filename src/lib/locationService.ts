@@ -1,4 +1,5 @@
 import type { Station, AirQualityReading } from './types.js';
+import { getAirQualityMessage } from './messages.js';
 
 export interface UserLocation {
 	latitude: number;
@@ -98,36 +99,6 @@ export function getStationReading(station: Station, readings: AirQualityReading[
 }
 
 export function getLocationBasedMessage(aqi: number, rating: string, stakeholder: string = 'public'): string {
-	const messages = {
-		public: {
-			good: "It's a beautiful day to breathe! The air quality is excellent. Enjoy your outdoor activities without concern. Take a walk, go for a run, or enjoy a family picnic. Let's work together to keep our air this clean!",
-			moderate:
-				'The air is acceptable, but some people are sensitive to it. If you have asthma, allergies, or other respiratory conditions, take it easy on long or intense outdoor activities. Listen to your body—if you feel symptoms like coughing, move your activity indoors.',
-			unhealthy_sensitive:
-				'Air quality is unhealthy for sensitive groups. If you have heart or lung disease, are older, or have children, reduce prolonged or heavy outdoor exertion. Everyone else can continue normal outdoor activities.',
-			unhealthy:
-				'Red alert! Air quality is unhealthy today. Minimize time outdoors, especially strenuous activities like sports or jogging. If you must go out, consider wearing a high-quality mask (like an N95) to protect your lungs. Keep windows closed and use an air conditioner or purifier to keep indoor air clean.',
-			very_unhealthy:
-				'Air quality is very unhealthy. Everyone should avoid all outdoor exertion. Stay indoors with windows and doors closed. Use air purifiers if available. Wear N95 masks if you must go outside.',
-			hazardous:
-				'Emergency conditions! Air quality is hazardous to everyone. Remain indoors and avoid all outdoor activities. Seal windows and doors. Use air purifiers on high settings. Seek medical attention if you experience breathing difficulties.'
-		},
-		government: {
-			good: 'Good air quality is a sign of our progress. Use this data to celebrate achievements and reinforce policies that contribute to clean air. Highlight this success as a model for other regions and a benefit to public health and tourism.',
-			moderate:
-				'Moderate air quality provides an opportunity for targeted action. We can use this data to promote cleaner transport and energy-saving measures to prevent conditions from worsening. This is the ideal time to launch public campaigns about sustainable practices.',
-			unhealthy_sensitive:
-				'Air quality is affecting sensitive groups. Consider issuing health advisories for vulnerable populations. Review emission sources and implement temporary measures to reduce pollution levels.',
-			unhealthy:
-				'Unhealthy air quality is a public health risk. We recommend issuing a public advisory to reduce outdoor activities. Consider activating community clean air shelters or encouraging the use of public transport to reduce traffic-related emissions.',
-			very_unhealthy:
-				'Very unhealthy air quality requires immediate action. Issue public health warnings and consider emergency measures such as traffic restrictions, industrial emission controls, and public shelter activation.',
-			hazardous:
-				'Hazardous air quality requires emergency response. Declare a health emergency, implement all available emission reduction measures, and coordinate with health services to manage public health impacts.'
-		}
-	};
-
-	const ratingKey = rating.toLowerCase().replace(/ /g, '_').replace('for_sensitive_groups', '_sensitive');
-	const messageSet = messages[stakeholder as keyof typeof messages] || messages.public;
-	return messageSet[ratingKey as keyof typeof messageSet] || messageSet.moderate;
+	// Use the centralized message system from messages.ts
+	return getAirQualityMessage(rating, stakeholder);
 }
