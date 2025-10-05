@@ -26,8 +26,11 @@
 		}, 50);
 	});
 
-	// Redraw when any reactive values change
+	// Redraw when any reactive values change (aqi, rating, responsiveSize)
 	$: if (isMounted && canvasElement && responsiveSize > 0) {
+		// This will trigger whenever aqi, strokeColor, or responsiveSize changes
+		void aqi; // Track aqi changes
+		void strokeColor; // Track color changes
 		drawGauge();
 	}
 
