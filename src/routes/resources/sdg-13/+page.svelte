@@ -192,34 +192,52 @@
 									</h4>
 									<div class="space-y-3">
 										{#each target.indicators as indicator}
-											<button
-												onclick={() => openIndicatorData(indicator)}
-												class="w-full bg-white rounded-lg p-4 border border-gray-200 hover:border-blue-500 hover:shadow-md transition-all group text-left"
-												disabled={!indicator.dataUrl}
-											>
-												<div class="flex gap-3">
-													<div
-														class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-xs font-bold text-white"
-														style="background-color: #56C02B"
-													>
-														{indicator.number}
-													</div>
-													<div class="flex-1">
-														<div class="text-xs font-semibold text-gray-500 mb-1">
-															Indicator {indicator.number}
+											<div class="bg-white rounded-lg border border-gray-200">
+												<button
+													onclick={() => openIndicatorData(indicator)}
+													class="w-full p-4 hover:bg-gray-50 transition-all group text-left"
+													disabled={!indicator.dataUrl}
+												>
+													<div class="flex gap-3">
+														<div
+															class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-xs font-bold text-white"
+															style="background-color: #56C02B"
+														>
+															{indicator.number}
 														</div>
-														<p class="text-sm text-gray-700 leading-relaxed">{indicator.description}</p>
-														{#if indicator.dataUrl}
-															<div class="mt-2 flex items-center gap-2 text-blue-600 text-sm font-medium">
-																<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-																	<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-																</svg>
-																<span class="group-hover:underline">View Data for Africa</span>
+														<div class="flex-1">
+															<div class="text-xs font-semibold text-gray-500 mb-1">
+																Indicator {indicator.number}
 															</div>
-														{/if}
+															<p class="text-sm text-gray-700 leading-relaxed">{indicator.description}</p>
+															{#if indicator.dataUrl}
+																<div class="mt-2 flex items-center gap-2 text-blue-600 text-sm font-medium">
+																	<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																		<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+																	</svg>
+																	<span class="group-hover:underline">View Data for Africa</span>
+																</div>
+															{/if}
+														</div>
 													</div>
-												</div>
-											</button>
+												</button>
+
+												{#if indicator.subIndicators && indicator.subIndicators.length > 0}
+													<div class="px-4 pb-3 border-t border-gray-100">
+														<div class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 mt-3">
+															Sub-indicators ({indicator.subIndicators.length})
+														</div>
+														<ul class="space-y-1.5">
+															{#each indicator.subIndicators as subIndicator}
+																<li class="flex gap-2 text-xs text-gray-600 leading-relaxed">
+																	<span class="text-blue-500 flex-shrink-0">›</span>
+																	<span>{subIndicator.description}</span>
+																</li>
+															{/each}
+														</ul>
+													</div>
+												{/if}
+											</div>
 										{/each}
 									</div>
 								</div>
