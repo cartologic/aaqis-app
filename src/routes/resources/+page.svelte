@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { asset } from '$app/paths';
+	import { resolve } from '$app/paths';
 	import { resourceSections, type SDG, type CityPortal } from '$lib/data/resources';
 
 	function isSDG(item: SDG | CityPortal): item is SDG {
@@ -14,12 +14,15 @@
 		if (isSDG(item)) {
 			if (item.type === 'external') {
 				window.open(item.url, '_blank');
+			} else if (item.type === 'page') {
+				// Navigate to custom page (already has base path in URL)
+				window.location.href = item.url.startsWith('http') ? item.url : resolve(item.url as any);
 			} else if (item.type === 'iframe') {
 				// Navigate to detail page with iframe
-				window.location.href = `/resources/${item.id}`;
+				window.location.href = resolve(`/resources/${item.id}` as any);
 			} else {
 				// Navigate to detail page
-				window.location.href = `/resources/${item.id}`;
+				window.location.href = resolve(`/resources/${item.id}` as any);
 			}
 		} else if (isCityPortal(item)) {
 			// City portals always open in new tab
@@ -141,7 +144,7 @@
 				Air quality monitoring helps achieve multiple SDGs. Explore the data and take action for a healthier future.
 			</p>
 			<a
-				href="/"
+				href={resolve('/')}
 				class="inline-block bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
 			>
 				View Air Quality Data

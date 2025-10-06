@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { page } from '$app/stores';
+	import { resolve } from '$app/paths';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -26,7 +26,7 @@
 		<div class="container mx-auto px-4 py-4">
 			<div class="flex items-center gap-4">
 				<a
-					href="/resources"
+					href={resolve('/resources')}
 					class="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
 				>
 					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -142,7 +142,7 @@
 				and citizens make informed decisions contributing to {data.sdg.title.toLowerCase()}.
 			</p>
 			<a
-				href="/"
+				href={resolve('/')}
 				class="inline-block bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
 			>
 				Explore Air Quality Data

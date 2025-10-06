@@ -65,9 +65,8 @@ export const relatedSDGs: SDG[] = [
 		description: 'Take urgent action to combat climate change and its impacts. Air quality and climate change share common sources - burning fossil fuels.',
 		color: '#3F7E44',
 		icon: '🌍',
-		url: 'https://unstats.un.org/sdgs/report/2023/goal-13/',
-		type: 'iframe',
-		iframeSelector: '.ant-layout-content'
+		url: '/resources/sdg-13',
+		type: 'page'
 	},
 	{
 		id: 'sdg-15',
