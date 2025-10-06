@@ -722,12 +722,30 @@
 <header class="text-white shadow-xl" style={headerBackgroundStyle}>
 	<div class="container mx-auto px-3 py-2 md:px-4 md:py-4">
 		<div class="flex flex-col md:flex-row md:items-center md:justify-between">
-			<div class="flex items-center space-x-2 md:space-x-3 mb-2 md:mb-0">
-				<div class="text-lg md:text-2xl">🌍</div>
-				<div>
-					<h1 class="text-lg md:text-2xl font-bold font-african text-white">AAQIS</h1>
-					<p class="text-xs text-blue-100 hidden md:block">Africa Air Quality Information System</p>
-				</div>
+			<div class="flex items-center justify-between md:justify-start gap-4 md:gap-8 mb-2 md:mb-0 w-full md:w-auto">
+				<a href="/" class="flex items-center space-x-2 md:space-x-3 hover:opacity-90 transition-opacity">
+					<div class="text-lg md:text-2xl">🌍</div>
+					<div>
+						<h1 class="text-lg md:text-2xl font-bold font-african text-white">AAQIS</h1>
+						<p class="text-xs text-blue-100 hidden md:block">Africa Air Quality Information System</p>
+					</div>
+				</a>
+
+				<!-- Navigation Links -->
+				<nav class="flex items-center gap-2">
+					<a
+						href="/"
+						class="px-3 py-1.5 md:px-4 md:py-2 text-sm font-medium text-white hover:bg-white/20 rounded-lg transition-colors"
+					>
+						Home
+					</a>
+					<a
+						href="/resources"
+						class="px-3 py-1.5 md:px-4 md:py-2 text-sm font-medium text-white hover:bg-white/20 rounded-lg transition-colors"
+					>
+						Resources
+					</a>
+				</nav>
 			</div>
 
 			<div
