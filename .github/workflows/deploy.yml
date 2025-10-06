@@ -27,21 +27,19 @@ jobs:
       - name: 📦 Checkout
         uses: actions/checkout@v4
 
-      - name: 🐰 Setup Bun
-        uses: oven-sh/setup-bun@v1
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          bun-version: latest
+          version: 10
 
-      - name: 📦 Cache dependencies
-        uses: actions/cache@v4
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lockb') }}
-          restore-keys: |
-            ${{ runner.os }}-bun-
+          node-version: 22
+          cache: 'pnpm'
 
       - name: 📥 Install dependencies
-        run: bun install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: 🔧 Setup Pages
         uses: actions/configure-pages@v4
@@ -49,7 +47,7 @@ jobs:
           static_site_generator: sveltekit
 
       - name: 🏗️ Build
-        run: bun run build
+        run: pnpm run build
 
       - name: 📤 Upload Artifacts
         uses: actions/upload-pages-artifact@v3
