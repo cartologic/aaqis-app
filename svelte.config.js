@@ -8,7 +8,7 @@ const config = {
 	preprocess: vitePreprocess(),
 
 	kit: {
-		// Use static adapter for GitHub Pages deployment
+		// Use static adapter for static deployments
 		adapter: adapter({
 			pages: 'build',
 			assets: 'build',
@@ -17,7 +17,8 @@ const config = {
 			strict: true
 		}),
 		paths: {
-			base: process.env.NODE_ENV === 'production' ? '/aaqis-app' : ''
+			// GitHub Pages uses /aaqis-app, production server uses /
+			base: process.env.BASE_PATH || ''
 		}
 	}
 };

@@ -38,6 +38,45 @@ Navigate to: `Settings` → `Secrets and variables` → `Actions` → `Variables
 | ---------------- | ------------------------------------ | ------------------------------- |
 | `PRODUCTION_URL` | Production website URL (for display) | `https://afriairresilience.org` |
 
+## ⚙️ Configuration
+
+### Base Path Configuration
+
+The application uses different base paths for different environments:
+
+- **Development (Local)**: No base path (`''`)
+- **GitHub Pages (dev branch)**: `/aaqis-app`
+- **Production Server (main branch)**: No base path (`''`)
+
+This is configured in `svelte.config.js` using the `BASE_PATH` environment variable:
+
+```javascript
+paths: {
+  base: process.env.BASE_PATH || ''
+}
+```
+
+The GitHub Actions workflows automatically set the correct `BASE_PATH`:
+- `deploy.yml` (GitHub Pages): `BASE_PATH: /aaqis-app`
+- `deploy-production.yml` (SSH Server): `BASE_PATH: ''`
+
+### Local Development
+
+For local development, the app runs at the root path by default:
+
+```bash
+pnpm run dev
+# App available at: http://localhost:5173
+```
+
+To test with the GitHub Pages base path locally:
+
+```bash
+BASE_PATH=/aaqis-app pnpm run build
+BASE_PATH=/aaqis-app pnpm run preview
+# App available at: http://localhost:4173/aaqis-app
+```
+
 ## 🔧 Server Setup
 
 ### 1. Create Deployment User
