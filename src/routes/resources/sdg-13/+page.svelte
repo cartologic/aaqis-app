@@ -31,36 +31,8 @@
 		iframeLoaded = false;
 	}
 
-	function handleIframeLoad(event: Event) {
+	function handleIframeLoad() {
 		iframeLoaded = true;
-
-		// Try to hide UN header elements (may not work due to CORS restrictions)
-		try {
-			const iframe = event.target as HTMLIFrameElement;
-			const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-
-			if (iframeDoc) {
-				// Add custom styles to hide header and make content full height
-				const style = iframeDoc.createElement('style');
-				style.textContent = `
-					header, .header, nav, .nav, .site-header, .main-navigation {
-						display: none !important;
-					}
-					body {
-						padding-top: 0 !important;
-						margin-top: 0 !important;
-					}
-					.main-content, main, #main-content {
-						margin-top: 0 !important;
-						padding-top: 0 !important;
-					}
-				`;
-				iframeDoc.head.appendChild(style);
-			}
-		} catch (error) {
-			// CORS restriction - cannot access iframe content
-			console.log('Cannot modify iframe content (CORS restriction)');
-		}
 	}
 </script>
 

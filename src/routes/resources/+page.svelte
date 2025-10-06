@@ -113,9 +113,16 @@
 								<div class="flex items-start gap-4 mb-4">
 									<span class="text-5xl">{item.icon}</span>
 									<div class="flex-1">
-										<h3 class="text-xl font-bold text-gray-800 group-hover:text-blue-600 transition-colors mb-1">
-											{item.city}
-										</h3>
+										<div class="flex items-center gap-2 mb-1">
+											<h3 class="text-xl font-bold text-gray-800 group-hover:text-blue-600 transition-colors">
+												{item.city}
+											</h3>
+											{#if item.type === 'contact'}
+												<span class="text-xs px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full font-medium">
+													Contact Point
+												</span>
+											{/if}
+										</div>
 										<p class="text-sm text-gray-500">{item.country}</p>
 									</div>
 								</div>
@@ -123,7 +130,7 @@
 									{item.description}
 								</p>
 								<div class="flex items-center text-blue-600 text-sm font-medium">
-									<span>Visit Portal</span>
+									<span>{item.type === 'contact' ? 'View Contact Info' : 'Visit Portal'}</span>
 									<svg class="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
 									</svg>

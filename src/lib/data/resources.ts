@@ -12,7 +12,6 @@ export interface SDG {
 	icon: string;
 	url: string;
 	type: 'page' | 'iframe' | 'external';
-	iframeSelector?: string; // CSS selector to extract content from iframe
 }
 
 export interface CityPortal {
@@ -22,6 +21,7 @@ export interface CityPortal {
 	url: string;
 	icon: string;
 	description: string;
+	type?: 'portal' | 'contact'; // portal = city portal, contact = contact point
 }
 
 export const relatedSDGs: SDG[] = [
@@ -33,8 +33,7 @@ export const relatedSDGs: SDG[] = [
 		color: '#4C9F38',
 		icon: '🏥',
 		url: 'https://unstats.un.org/sdgs/report/2023/goal-03/',
-		type: 'iframe',
-		iframeSelector: '.ant-layout-content'
+		type: 'iframe'
 	},
 	{
 		id: 'sdg-7',
@@ -44,8 +43,7 @@ export const relatedSDGs: SDG[] = [
 		color: '#FCC30B',
 		icon: '⚡',
 		url: 'https://unstats.un.org/sdgs/report/2023/goal-07/',
-		type: 'iframe',
-		iframeSelector: '.ant-layout-content'
+		type: 'iframe'
 	},
 	{
 		id: 'sdg-11',
@@ -55,8 +53,7 @@ export const relatedSDGs: SDG[] = [
 		color: '#FD9D24',
 		icon: '🏙️',
 		url: 'https://unstats.un.org/sdgs/report/2023/goal-11/',
-		type: 'iframe',
-		iframeSelector: '.ant-layout-content'
+		type: 'iframe'
 	},
 	{
 		id: 'sdg-13',
@@ -76,8 +73,7 @@ export const relatedSDGs: SDG[] = [
 		color: '#56C02B',
 		icon: '🌳',
 		url: 'https://unstats.un.org/sdgs/report/2023/goal-15/',
-		type: 'iframe',
-		iframeSelector: '.ant-layout-content'
+		type: 'iframe'
 	}
 ];
 
@@ -112,7 +108,17 @@ export const cityPortals: CityPortal[] = [
 		country: 'Rwanda',
 		url: 'https://kigalicity.gov.rw/',
 		icon: '🇷🇼',
-		description: 'City of Kigali official portal'
+		description: 'City of Kigali official portal',
+		type: 'portal'
+	},
+	{
+		id: 'gaborone',
+		city: 'Gaborone',
+		country: 'Botswana',
+		url: 'https://gov.bw/node/708',
+		icon: '🇧🇼',
+		description: 'Gaborone City Council contact point',
+		type: 'contact'
 	}
 ];
 
