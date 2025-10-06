@@ -392,7 +392,7 @@
 						{/snippet}
 						<Popup class="custom-popup" offset={[0, -10]}>
 							<div
-								class="bg-white rounded-xl shadow-2xl border border-gray-200 p-4 min-w-[280px] backdrop-blur-sm bg-white/95"
+								class="rounded-xl shadow-2xl border border-gray-200 p-4 min-w-[280px] backdrop-blur-sm bg-white/95"
 							>
 								<div class="flex items-center justify-between mb-3">
 									<div>

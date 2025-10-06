@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { base } from '$app/paths';
+	import { asset } from '$app/paths';
 	import type { AirQualityReading, Station } from '$lib/types';
 	import {
 		loadAirQualityData,
@@ -980,8 +980,8 @@
 					})()}
 					selectedYear={calendarSelectedYear}
 					selectedPollutant={calendarSelectedPollutant}
-					on:yearChange={e => (calendarSelectedYear = e.detail)}
-					on:pollutantChange={e => (calendarSelectedPollutant = e.detail)}
+					onyearChange={year => (calendarSelectedYear = year)}
+					onpollutantChange={pollutant => (calendarSelectedPollutant = pollutant)}
 				/>
 			</div>
 		</section>
@@ -1125,7 +1125,7 @@
 								aria-label="CEDARE - Centre for Environment and Development for the Arab Region and Europe"
 							>
 								<img
-									src="{base}/images/logos/CEDARE_White.png"
+									src={asset('/images/logos/CEDARE_White.png')}
 									alt="CEDARE Logo"
 									class="h-12 md:h-16 w-auto object-contain"
 								/>
@@ -1138,7 +1138,7 @@
 								aria-label="UNEP - United Nations Environment Programme"
 							>
 								<img
-									src="{base}/images/logos/UNEP_White.png"
+									src={asset('/images/logos/UNEP_White.png')}
 									alt="UNEP Logo"
 									class="h-12 md:h-16 w-auto object-contain"
 								/>

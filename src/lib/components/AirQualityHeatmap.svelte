@@ -1,10 +1,8 @@
 <script lang="ts">
-	import { onMount, onDestroy, createEventDispatcher } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import type { AirQualityReading, Station } from '$lib/types';
 	import { browser } from '$app/environment';
 	import { dev } from '$app/environment';
-
-	const dispatch = createEventDispatcher();
 
 	export let data: AirQualityReading[] = [];
 	export let selectedStation: Station | null = null;
@@ -13,6 +11,8 @@
 	export let selectedPollutant: string = 'overall_aqi';
 	export let stationName: string = '';
 	export let availableYears: number[] = [];
+	export let onyearChange: ((year: number) => void) | undefined = undefined;
+	export let onpollutantChange: ((pollutant: string) => void) | undefined = undefined;
 
 	let chartContainer: HTMLDivElement;
 	let chart: any;
@@ -243,7 +243,7 @@
 
 		try {
 			// Import ECharts only in browser environment
-			const { init } = await import('echarts');
+			const echarts = await import('echarts');
 
 			const heatmapData = prepareEChartsData();
 
@@ -257,7 +257,7 @@
 			const dataYear = selectedYear;
 
 			// Initialize chart
-			chart = init(chartContainer);
+			chart = echarts.init(chartContainer);
 
 			// Fixed cell size for square cells like GitHub
 			const cellSize = window.innerWidth < 640 ? 11 : 13;
@@ -689,10 +689,10 @@
 					<h3 class="text-xl font-bold text-gray-800">{title}</h3>
 					<button
 						class="text-blue-500 hover:text-blue-600 text-xs font-bold border border-blue-500 rounded-full w-5 h-5 flex items-center justify-center"
-						on:mouseenter={() => (showTooltip = true)}
-						on:mouseleave={() => (showTooltip = false)}
-						on:focus={() => (showTooltip = true)}
-						on:blur={() => (showTooltip = false)}
+						onmouseenter={() => (showTooltip = true)}
+						onmouseleave={() => (showTooltip = false)}
+						onfocus={() => (showTooltip = true)}
+						onblur={() => (showTooltip = false)}
 					>
 						!
 					</button>
@@ -739,7 +739,7 @@
 						<select
 							id="calendar-year-heatmap"
 							value={selectedYear}
-							on:change={e => dispatch('yearChange', parseInt(e.currentTarget.value))}
+							onchange={e => onyearChange?.(parseInt(e.currentTarget.value))}
 							class="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white min-w-[100px]"
 						>
 							{#each availableYears as year}
@@ -756,7 +756,7 @@
 					<select
 						id="calendar-pollutant-heatmap"
 						value={selectedPollutant}
-						on:change={e => dispatch('pollutantChange', e.currentTarget.value)}
+						onchange={e => onpollutantChange?.(e.currentTarget.value)}
 						class="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white min-w-[140px]"
 					>
 						<option value="overall_aqi">Overall AQI</option>

@@ -1,6 +1,6 @@
 import type { AirQualityReading, Station, CityInfo, AQIRating } from './types.js';
 import { CITY_INFO } from './types.js';
-import { base } from '$app/paths';
+import { asset } from '$app/paths';
 /**
  * Load air quality data from Parquet file using WebAssembly
  * @returns Promise<AirQualityReading[]> Array of air quality readings
@@ -12,7 +12,7 @@ export async function loadAirQualityData(): Promise<AirQualityReading[]> {
 		await parquet.default();
 		console.log('Parquet WASM loaded successfully');
 
-		const response = await fetch(`${base}/data/african_cities_air_quality_2024_2026.parquet`);
+		const response = await fetch(asset('/data/african_cities_air_quality_2024_2026.parquet'));
 		if (!response.ok) {
 			throw new Error(`HTTP error! status: ${response.status}`);
 		}
@@ -33,7 +33,7 @@ export async function loadAirQualityData(): Promise<AirQualityReading[]> {
 
 		// Fallback to CSV
 		try {
-			const response = await fetch(`${base}/data/african_cities_air_quality_2024_2026.csv`);
+			const response = await fetch(asset('/data/african_cities_air_quality_2024_2026.csv'));
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
