@@ -1,6 +1,7 @@
 export interface Indicator {
 	number: string;
 	description: string;
+	dataUrl?: string; // URL to UN data commons for this specific indicator
 }
 
 export interface Target {
@@ -18,17 +19,20 @@ export const sdg13Targets: Target[] = [
 			{
 				number: '13.1.1',
 				description:
-					'Number of deaths, missing persons and directly affected persons attributed to disasters per 100,000 population'
+					'Number of deaths, missing persons and directly affected persons attributed to disasters per 100,000 population',
+				dataUrl: 'https://unstats.un.org/UNSDWebsite/undatacommons/goals?p=YWZyaWNhJmRjL3RvcGljL3VuZGF0YS9zZGcm#explore+dc/topic/undata/sdg_13.1.1'
 			},
 			{
 				number: '13.1.2',
 				description:
-					'Number of countries that adopt and implement national disaster risk reduction strategies in line with the Sendai Framework for Disaster Risk Reduction 2015–2030'
+					'Number of countries that adopt and implement national disaster risk reduction strategies in line with the Sendai Framework for Disaster Risk Reduction 2015–2030',
+				dataUrl: 'https://unstats.un.org/UNSDWebsite/undatacommons/goals?p=YWZyaWNhJmRjL3RvcGljL3VuZGF0YS9zZGcm#explore+dc/topic/undata/sdg_13.1.2'
 			},
 			{
 				number: '13.1.3',
 				description:
-					'Proportion of local governments that adopt and implement local disaster risk reduction strategies in line with national disaster risk reduction strategies'
+					'Proportion of local governments that adopt and implement local disaster risk reduction strategies in line with national disaster risk reduction strategies',
+				dataUrl: 'https://unstats.un.org/UNSDWebsite/undatacommons/goals?p=YWZyaWNhJmRjL3RvcGljL3VuZGF0YS9zZGcm#explore+dc/topic/undata/sdg_13.1.3'
 			}
 		]
 	},
@@ -39,11 +43,13 @@ export const sdg13Targets: Target[] = [
 			{
 				number: '13.2.1',
 				description:
-					'Number of countries with nationally determined contributions, long-term strategies, national adaptation plans and adaptation communications, as reported to the secretariat of the United Nations Framework Convention on Climate Change'
+					'Number of countries with nationally determined contributions, long-term strategies, national adaptation plans and adaptation communications, as reported to the secretariat of the United Nations Framework Convention on Climate Change',
+				dataUrl: 'https://unstats.un.org/UNSDWebsite/undatacommons/goals?p=YWZyaWNhJmRjL3RvcGljL3VuZGF0YS9zZGcm#explore+dc/topic/undata/sdg_13.2.1'
 			},
 			{
 				number: '13.2.2',
-				description: 'Total greenhouse gas emissions per year'
+				description: 'Total greenhouse gas emissions per year',
+				dataUrl: 'https://unstats.un.org/UNSDWebsite/undatacommons/goals?p=YWZyaWNhJmRjL3RvcGljL3VuZGF0YS9zZGcm#explore+dc/topic/undata/sdg_13.2.2'
 			}
 		]
 	},
@@ -55,7 +61,8 @@ export const sdg13Targets: Target[] = [
 			{
 				number: '13.3.1',
 				description:
-					'Extent to which (i) global citizenship education and (ii) education for sustainable development are mainstreamed in (a) national education policies; (b) curricula; (c) teacher education; and (d) student assessment'
+					'Extent to which (i) global citizenship education and (ii) education for sustainable development are mainstreamed in (a) national education policies; (b) curricula; (c) teacher education; and (d) student assessment',
+				dataUrl: 'https://unstats.un.org/UNSDWebsite/undatacommons/goals?p=YWZyaWNhJmRjL3RvcGljL3VuZGF0YS9zZGcm#explore+dc/topic/undata/sdg_13.3.1'
 			}
 		]
 	},
@@ -67,7 +74,8 @@ export const sdg13Targets: Target[] = [
 			{
 				number: '13.a.1',
 				description:
-					'Amounts provided and mobilized in United States dollars per year in relation to the continued existing collective mobilization goal of the $100 billion commitment through to 2025'
+					'Amounts provided and mobilized in United States dollars per year in relation to the continued existing collective mobilization goal of the $100 billion commitment through to 2025',
+				dataUrl: 'https://unstats.un.org/UNSDWebsite/undatacommons/goals?p=YWZyaWNhJmRjL3RvcGljL3VuZGF0YS9zZGcm#explore+dc/topic/undata/sdg_13.a.1'
 			}
 		]
 	},
@@ -79,7 +87,8 @@ export const sdg13Targets: Target[] = [
 			{
 				number: '13.b.1',
 				description:
-					'Number of least developed countries and small island developing States with nationally determined contributions, long-term strategies, national adaptation plans and adaptation communications, as reported to the secretariat of the United Nations Framework Convention on Climate Change'
+					'Number of least developed countries and small island developing States with nationally determined contributions, long-term strategies, national adaptation plans and adaptation communications, as reported to the secretariat of the United Nations Framework Convention on Climate Change',
+				dataUrl: 'https://unstats.un.org/UNSDWebsite/undatacommons/goals?p=YWZyaWNhJmRjL3RvcGljL3VuZGF0YS9zZGcm#explore+dc/topic/undata/sdg_13.b.1'
 			}
 		]
 	}

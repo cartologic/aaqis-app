@@ -1,9 +1,12 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { sdg13Targets, airQualityClimateConnection } from '$lib/data/sdg13';
-	import type { Target } from '$lib/data/sdg13';
+	import type { Target, Indicator } from '$lib/data/sdg13';
 
 	let expandedTargets = $state<Set<string>>(new Set());
+	let selectedIndicator = $state<Indicator | null>(null);
+	let showModal = $state(false);
+	let iframeLoaded = $state(false);
 
 	function toggleTarget(targetNumber: string) {
 		if (expandedTargets.has(targetNumber)) {
@@ -12,6 +15,52 @@
 			expandedTargets.add(targetNumber);
 		}
 		expandedTargets = new Set(expandedTargets);
+	}
+
+	function openIndicatorData(indicator: Indicator) {
+		if (indicator.dataUrl) {
+			selectedIndicator = indicator;
+			showModal = true;
+			iframeLoaded = false;
+		}
+	}
+
+	function closeModal() {
+		showModal = false;
+		selectedIndicator = null;
+		iframeLoaded = false;
+	}
+
+	function handleIframeLoad(event: Event) {
+		iframeLoaded = true;
+
+		// Try to hide UN header elements (may not work due to CORS restrictions)
+		try {
+			const iframe = event.target as HTMLIFrameElement;
+			const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+
+			if (iframeDoc) {
+				// Add custom styles to hide header and make content full height
+				const style = iframeDoc.createElement('style');
+				style.textContent = `
+					header, .header, nav, .nav, .site-header, .main-navigation {
+						display: none !important;
+					}
+					body {
+						padding-top: 0 !important;
+						margin-top: 0 !important;
+					}
+					.main-content, main, #main-content {
+						margin-top: 0 !important;
+						padding-top: 0 !important;
+					}
+				`;
+				iframeDoc.head.appendChild(style);
+			}
+		} catch (error) {
+			// CORS restriction - cannot access iframe content
+			console.log('Cannot modify iframe content (CORS restriction)');
+		}
 	}
 </script>
 
@@ -171,7 +220,11 @@
 									</h4>
 									<div class="space-y-3">
 										{#each target.indicators as indicator}
-											<div class="bg-white rounded-lg p-4 border border-gray-200">
+											<button
+												onclick={() => openIndicatorData(indicator)}
+												class="w-full bg-white rounded-lg p-4 border border-gray-200 hover:border-blue-500 hover:shadow-md transition-all group text-left"
+												disabled={!indicator.dataUrl}
+											>
 												<div class="flex gap-3">
 													<div
 														class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-xs font-bold text-white"
@@ -184,9 +237,17 @@
 															Indicator {indicator.number}
 														</div>
 														<p class="text-sm text-gray-700 leading-relaxed">{indicator.description}</p>
+														{#if indicator.dataUrl}
+															<div class="mt-2 flex items-center gap-2 text-blue-600 text-sm font-medium">
+																<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																	<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+																</svg>
+																<span class="group-hover:underline">View Data for Africa</span>
+															</div>
+														{/if}
 													</div>
 												</div>
-											</div>
+											</button>
 										{/each}
 									</div>
 								</div>
@@ -272,4 +333,93 @@
 			</div>
 		</div>
 	</div>
+
+	<!-- Data Modal -->
+	{#if showModal && selectedIndicator}
+		<div
+			class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-2 md:p-4"
+			onclick={closeModal}
+			onkeydown={(e) => e.key === 'Escape' && closeModal()}
+			role="button"
+			tabindex="-1"
+			aria-label="Close modal overlay"
+		>
+			<div
+				class="bg-white rounded-xl shadow-2xl w-full h-full md:h-[95vh] flex flex-col"
+				onclick={(e) => e.stopPropagation()}
+				onkeydown={(e) => e.stopPropagation()}
+				role="dialog"
+				aria-modal="true"
+				tabindex="0"
+			>
+				<!-- Modal Header - Compact -->
+				<div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50">
+					<div class="flex items-center gap-3">
+						<div
+							class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-white"
+							style="background-color: #56C02B"
+						>
+							{selectedIndicator.number}
+						</div>
+						<div>
+							<h3 class="text-sm font-semibold text-gray-900">
+								Indicator {selectedIndicator.number}
+							</h3>
+							<p class="text-xs text-gray-600 max-w-2xl truncate">{selectedIndicator.description}</p>
+						</div>
+					</div>
+					<button
+						onclick={closeModal}
+						class="flex-shrink-0 ml-4 p-1.5 hover:bg-gray-200 rounded-lg transition-colors"
+						aria-label="Close modal"
+					>
+						<svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+						</svg>
+					</button>
+				</div>
+
+				<!-- Modal Content -->
+				<div class="flex-1 relative overflow-hidden" style="min-height: 70vh;">
+					{#if !iframeLoaded}
+						<div class="absolute inset-0 flex items-center justify-center bg-gray-50 z-10">
+							<div class="text-center">
+								<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+								<p class="text-gray-600">Loading data visualization...</p>
+							</div>
+						</div>
+					{/if}
+					<iframe
+						src={selectedIndicator.dataUrl}
+						title="Indicator {selectedIndicator.number} Data"
+						class="w-full h-full border-0"
+						style="min-height: 70vh; height: 100%;"
+						sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+						onload={handleIframeLoad}
+					></iframe>
+				</div>
+
+				<!-- Modal Footer - Compact -->
+				<div class="px-4 py-2 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
+					<a
+						href={selectedIndicator.dataUrl}
+						target="_blank"
+						rel="noopener noreferrer"
+						class="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-700 font-medium text-xs"
+					>
+						<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+						</svg>
+						<span>Open in new tab</span>
+					</a>
+					<button
+						onclick={closeModal}
+						class="px-3 py-1.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium text-xs"
+					>
+						Close
+					</button>
+				</div>
+			</div>
+		</div>
+	{/if}
 </div>
